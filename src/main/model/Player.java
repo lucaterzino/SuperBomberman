@@ -62,8 +62,8 @@ public class Player {
 
     public void draw(GraphicsContext gc) {
         // --- PIXEL ART BOMBERMAN ---
-        // Disegnato con forme semplici per simulare pixel art
-        
+        double cx = x + SIZE / 2;
+
         // Ombra
         gc.setFill(Color.rgb(0, 0, 0, 0.4));
         gc.fillOval(x + 8, y + SIZE - 8, SIZE - 16, 8);
@@ -76,25 +76,23 @@ public class Player {
         gc.setFill(Color.BLACK);
         gc.fillRect(x + 14, y + 34, 20, 4);
         gc.setFill(Color.GOLD);
-        gc.fillRect(x + 22, y + 34, 4, 4); // Fibbia
+        gc.fillRect(x + 22, y + 34, 4, 4);
 
         // Testa (Bianca)
         gc.setFill(Color.WHITE);
-        gc.fillRect(x + 10, y + 4, 28, 26); // Squadrata per stile pixel
+        gc.fillRect(x + 10, y + 4, 28, 26); 
         
         // Contorno Testa
         gc.setStroke(Color.BLACK);
         gc.setLineWidth(2);
         gc.strokeRect(x + 10, y + 4, 28, 26);
 
-        // Viso
-        double cx = x + SIZE / 2;
-        // Occhi (Linee verticali nere)
+        // Viso (Occhi linee)
         gc.setFill(Color.BLACK);
         gc.fillRect(cx - 6, y + 14, 4, 8); // SX
         gc.fillRect(cx + 2, y + 14, 4, 8); // DX
         
-        // Sopracciglia (Arrabbiato)
+        // Sopracciglia
         gc.strokeLine(cx - 8, y + 12, cx - 2, y + 16);
         gc.strokeLine(cx + 8, y + 12, cx + 2, y + 16);
 
@@ -108,7 +106,7 @@ public class Player {
         gc.fillOval(x + 10, y + 38, 12, 10); // SX
         gc.fillOval(x + 26, y + 38, 12, 10); // DX
         
-        // Pom-pom/Antenna (Rosa)
+        // Pom-pom (Antenna)
         gc.setFill(Color.MAGENTA);
         gc.fillRect(cx - 4, y - 4, 8, 8);
     }

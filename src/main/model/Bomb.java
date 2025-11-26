@@ -5,7 +5,7 @@ import javafx.scene.paint.Color;
 
 public class Bomb {
 
-    private static final int FUSE_TIME_FRAMES = 60; 
+    private static final int FUSE_TIME_FRAMES = 60; // 2 secondi a 30fps
     
     private int col, row;
     private int timerFrames;
@@ -23,6 +23,8 @@ public class Bomb {
 
     public void update() {
         if (!isRemote) timerFrames--;
+        
+        // Animazione pulsante
         double pulseSpeed = 0.2; 
         if (growing) {
             currentRadius += pulseSpeed;
@@ -51,12 +53,6 @@ public class Bomb {
         // Riflesso (Bianco, a sinistra)
         gc.setFill(Color.WHITE);
         gc.fillOval(pixelX + offset + currentRadius*0.2, pixelY + offset + currentRadius*0.2, currentRadius*0.25, currentRadius*0.25);
-
-        // Griglia/Pattern sulla bomba (opzionale, per dare texture)
-        gc.setStroke(Color.web("#333333"));
-        gc.setLineWidth(1);
-        gc.strokeLine(pixelX + offset, pixelY + offset + currentRadius/2, pixelX + offset + currentRadius, pixelY + offset + currentRadius/2);
-        gc.strokeLine(pixelX + offset + currentRadius/2, pixelY + offset, pixelX + offset + currentRadius/2, pixelY + offset + currentRadius);
 
         // Tappo superiore (Giallo)
         gc.setFill(Color.GOLD);

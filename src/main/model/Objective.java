@@ -41,25 +41,20 @@ public class Objective {
         gc.setFill(Color.BLACK.deriveColor(0, 0, 0, 0.4));
         gc.fillOval(x + 4, y + 4, currentSize, currentSize);
 
-        // Corpo Perla (Gradiente simulato a cerchi concentrici)
-        // Esterno (Scuro)
+        // Corpo Perla
         gc.setFill(Color.web("#00CED1")); // Dark Turquoise
         gc.fillOval(x, y, currentSize, currentSize);
         
-        // Medio
-        gc.setFill(Color.web("#E0FFFF")); // Light Cyan
-        gc.fillOval(x + 4, y + 4, currentSize - 8, currentSize - 8);
-        
-        // Bordo Dorato (Anello esterno)
+        // Bordo
         gc.setStroke(Color.GOLD);
         gc.setLineWidth(3);
         gc.strokeOval(x, y, currentSize, currentSize);
 
-        // Riflesso Brillante (Bianco puro)
+        // Riflesso
         gc.setFill(Color.WHITE);
         gc.fillOval(x + currentSize * 0.2, y + currentSize * 0.2, currentSize * 0.25, currentSize * 0.25);
         
-        // Scintillio (Croce bianca)
+        // Scintillio
         gc.setStroke(Color.WHITE);
         gc.setLineWidth(2);
         double cx = x + currentSize * 0.3;

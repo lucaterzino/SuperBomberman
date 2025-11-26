@@ -62,6 +62,7 @@ public class GameMap {
                 // --- PAVIMENTO (Pixel Art Erba) ---
                 gc.setFill(Color.web("#2E8B57")); // SeaGreen base
                 gc.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+                // Dettagli erba
                 gc.setFill(Color.web("#3CB371")); 
                 gc.fillRect(x + 5, y + 5, 4, 4);
                 gc.fillRect(x + 40, y + 15, 4, 4);

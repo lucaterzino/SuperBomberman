@@ -1,5 +1,6 @@
 package main.controller;
 
+
 import javafx.animation.AnimationTimer;
 import javafx.fxml.FXML;
 import javafx.scene.canvas.Canvas;
@@ -13,7 +14,6 @@ import javafx.scene.text.TextAlignment;
 import main.Main;
 import main.model.*; 
 
-import java.awt.Point; 
 import java.util.ArrayList; 
 import java.util.Iterator; 
 import java.util.List; 
@@ -65,6 +65,12 @@ public class GameController {
     private int enemiesKilled = 0;
     private double timeLeft = 240.0; 
 
+    // Classe interna per sostituire java.awt.Point e rimuovere la dipendenza da AWT
+    private static class Coord {
+        int x, y;
+        Coord(int x, int y) { this.x = x; this.y = y; }
+    }
+
     public void initialize() {
         gc = gameCanvas.getGraphicsContext2D();
 
@@ -109,12 +115,12 @@ public class GameController {
     private void spawnObjectives(int cols, int rows) {
         objectives.clear();
         gameWon = false;
-        List<Point> emptyLocations = new ArrayList<>();
+        List<Coord> emptyLocations = new ArrayList<>();
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
                 if (c == 1 && r == 1) continue; 
                 if (gameMap.getTile(c, r) == TileType.EMPTY) {
-                    emptyLocations.add(new Point(c, r));
+                    emptyLocations.add(new Coord(c, r));
                 }
             }
         }
@@ -124,7 +130,7 @@ public class GameController {
         for (int i = 0; i < objectivesToSpawn; i++) {
             if (emptyLocations.isEmpty()) break;
             int index = rand.nextInt(emptyLocations.size());
-            Point p = emptyLocations.remove(index);
+            Coord p = emptyLocations.remove(index);
             objectives.add(new Objective(p.x, p.y));
         }
     }
@@ -450,36 +456,28 @@ public class GameController {
         gc.setLineWidth(4);
         gc.strokeRect(2, 2, WINDOW_WIDTH-4, HUD_HEIGHT-4);
         
-        // Font stile Pixel (Monospaced)
         gc.setFont(Font.font("Monospaced", FontWeight.BOLD, 28));
         gc.setTextAlign(TextAlignment.LEFT);
 
-        // Centriamo verticalmente tutti gli elementi sulla stessa linea
         double centerY = HUD_HEIGHT / 2;
         double startX = 40;
 
-        // --- TESTA DEL PERSONAGGIO ---
-        // Disegna centrata rispetto a centerY
         drawMiniPlayerHead(startX, centerY - 15);
         
-        startX += 45; // Spazio tra testa e cuore
+        startX += 45; 
 
-        // --- CUORE ROSSO CON VITE ---
-        // Centrato verticalmente rispetto a centerY
         double heartSize = 1.5;
         double heartX = startX;
-        // Il cuore originale è alto circa 25px, scalato 1.5 diventa 37.5px
-        // Per centrarlo su centerY, dobbiamo traslare Y di - (altezza/2)
         double heartY = centerY - 20; 
         
         gc.save();
         gc.translate(heartX, heartY);
         gc.scale(heartSize, heartSize);
         
-        // Disegno Cuore (SVG Path migliorato e simmetrico)
         gc.setFill(Color.RED);
         gc.setStroke(Color.BLACK);
         gc.setLineWidth(1);
+        // Correzione: uso appendSVGPath invece di fillSVGPath per compatibilità
         String heartPath = "M 12,4 Q 4,4 4,10 Q 4,18 12,24 Q 20,18 20,10 Q 20,4 12,4 z";
         gc.beginPath();
         gc.appendSVGPath(heartPath);
@@ -488,48 +486,39 @@ public class GameController {
         
         gc.restore();
 
-        // Numero vite dentro il cuore (Centrato perfettamente)
         gc.setFill(Color.WHITE);
         gc.setStroke(Color.BLACK);
         gc.setLineWidth(1);
         gc.setTextAlign(TextAlignment.CENTER);
         gc.setFont(Font.font("Monospaced", FontWeight.BOLD, 24));
         
-        // Coordinate del testo: centro orizzontale del cuore + offset verticale per baseline
         double textX = heartX + (24 * heartSize) / 2; 
-        double textY = centerY + 8; // Aggiustamento fine per centratura verticale del font
+        double textY = centerY + 8; 
         
         gc.fillText(String.valueOf(lives), textX, textY); 
         gc.strokeText(String.valueOf(lives), textX, textY);
         gc.setTextAlign(TextAlignment.LEFT);
 
-        // --- Resto dell'HUD (Allineato sulla stessa riga Y) ---
         startX += 90; 
-        double textBaselineY = centerY + 10; // Baseline comune per tutto il testo
+        double textBaselineY = centerY + 10; 
 
-        // Nemici
-        // Icona nemico centrata su centerY
         gc.setFill(Color.RED);
-        gc.fillRect(startX, centerY - 12, 24, 24); // Quadrato rosso base
+        gc.fillRect(startX, centerY - 12, 24, 24); 
         gc.setFill(Color.WHITE); 
-        gc.fillRect(startX + 4, centerY - 8, 6, 6); // Occhio sx
-        gc.fillRect(startX + 14, centerY - 8, 6, 6); // Occhio dx
+        gc.fillRect(startX + 4, centerY - 8, 6, 6); 
+        gc.fillRect(startX + 14, centerY - 8, 6, 6); 
         
-        // Testo nemici
         gc.setFont(Font.font("Monospaced", FontWeight.BOLD, 28));
         gc.setFill(Color.WHITE);
         gc.fillText(String.valueOf(enemiesKilled), startX + 35, textBaselineY);
 
         startX += 120;
 
-        // Punteggio
-        // Icona moneta centrata
         gc.setFill(Color.GOLD);
         gc.fillOval(startX, centerY - 12, 24, 24);
         gc.setStroke(Color.WHITE);
         gc.strokeOval(startX + 5, centerY - 7, 14, 14);
         
-        // Testo Punteggio
         String scoreStr = String.format("%02d", score);
         gc.setFill(Color.WHITE);
         gc.setStroke(Color.BLACK);
@@ -537,11 +526,10 @@ public class GameController {
         gc.fillText(scoreStr, startX + 35, textBaselineY);
         gc.strokeText(scoreStr, startX + 35, textBaselineY);
 
-        // Timer (A destra, allineato)
         double timerWidth = 160;
         double timerHeight = 40;
         double timerX = WINDOW_WIDTH - 220;
-        double timerY = centerY - timerHeight/2; // Centrato verticalmente
+        double timerY = centerY - timerHeight/2; 
         
         gc.setFill(Color.BLACK);
         gc.fillRect(timerX, timerY, timerWidth, timerHeight);
@@ -554,11 +542,9 @@ public class GameController {
         String timeString = String.format("%02d:%02d", minutes, seconds);
         
         gc.setFill(timeLeft < 30 ? Color.RED : Color.WHITE);
-        // Testo timer centrato nel box
         gc.fillText(timeString, timerX + 40, textBaselineY);
         
-        // PowerUps (Icone piccole, sotto il timer o di lato)
-        double iconX = startX + 150; // Dopo il punteggio
+        double iconX = startX + 150; 
         List<PowerUpType> activeAbs = player.getActivePowerUps();
         for (PowerUpType p : activeAbs) {
             gc.setFill(p.getColor());
@@ -572,22 +558,14 @@ public class GameController {
     
     private void drawMiniPlayerHead(double x, double y) {
         double size = 30;
-        
-        // Casco/Testa Bianca (Pixel Style)
         gc.setFill(Color.WHITE);
         gc.fillRect(x, y, size, size - 4); 
-        
-        // Contorno nero
         gc.setStroke(Color.BLACK);
         gc.setLineWidth(2);
         gc.strokeRect(x, y, size, size - 4);
-        
-        // Occhi (linee verticali)
         gc.setFill(Color.BLACK);
         gc.fillRect(x + 8, y + 8, 4, 8);
         gc.fillRect(x + 18, y + 8, 4, 8);
-        
-        // Pom-pom (Antenna)
         gc.setFill(Color.MAGENTA);
         gc.fillRect(x + 10, y - 6, 10, 6);
         gc.strokeRect(x + 10, y - 6, 10, 6);
@@ -596,16 +574,13 @@ public class GameController {
     private void drawOverlay(String title, Color color) {
         gc.setFill(new Color(0, 0, 0, 0.7));
         gc.fillRect(0, 0, gameCanvas.getWidth(), gameCanvas.getHeight());
-        
         gc.setFill(color);
         gc.setFont(new Font("Arial", 50));
         gc.setTextAlign(TextAlignment.CENTER);
         gc.fillText(title, gameCanvas.getWidth()/2, gameCanvas.getHeight()/2);
-        
         gc.setFont(new Font("Arial", 20));
         gc.setFill(Color.WHITE);
         gc.fillText("Premi ENTER per tornare al menu", gameCanvas.getWidth()/2, gameCanvas.getHeight()/2 + 50);
-        
         if (gameWon) {
              gc.fillText("Punteggio Finale: " + score, gameCanvas.getWidth()/2, gameCanvas.getHeight()/2 + 90);
         }

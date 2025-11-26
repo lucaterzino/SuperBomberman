@@ -47,7 +47,7 @@ public class Enemy {
     public void draw(GraphicsContext gc) {
         // --- PIXEL ART BALLOOM (Nemico Palloncino) ---
         
-        // Corpo (Arancione) - Forma a goccia pixellata
+        // Corpo (Arancione)
         gc.setFill(Color.ORANGERED);
         // Centro
         gc.fillRect(x + 8, y + 8, SIZE - 16, SIZE - 16);
@@ -103,8 +103,7 @@ public class Enemy {
             case UP: targetRow--; break; case DOWN: targetRow++; break;
             case LEFT: targetCol--; break; case RIGHT: targetCol++; break;
         }
-        if (targetRow < 0 || targetRow >= dangerMap.length || targetCol < 0 || targetCol >= dangerMap[0].length ||
-            map.isTileSolid(targetCol, targetRow) || dangerMap[targetRow][targetCol] || isBombAt(targetCol, targetRow, bombs)) {
+        if (isBlocked(targetCol, targetRow, map, dangerMap, bombs)) {
             currentDirection = getRandomValidDirection(map, dangerMap, bombs);
             targetCol = col;
             targetRow = row;
@@ -113,36 +112,46 @@ public class Enemy {
                 case LEFT: targetCol--; break; case RIGHT: targetCol++; break;
             }
         }
-        if (targetRow >= 0 && targetRow < dangerMap.length && targetCol >= 0 && targetCol < dangerMap[0].length &&
-            !map.isTileSolid(targetCol, targetRow) && !dangerMap[targetRow][targetCol] && !isBombAt(targetCol, targetRow, bombs)) {
+        
+        if (!isBlocked(targetCol, targetRow, map, dangerMap, bombs)) {
             moveTo(targetCol, targetRow);
         }
     }
+    
+    private boolean isBlocked(int c, int r, GameMap map, boolean[][] dangerMap, List<Bomb> bombs) {
+        if (r < 0 || r >= dangerMap.length || c < 0 || c >= dangerMap[0].length) return true;
+        return map.isTileSolid(c, r) || dangerMap[r][c] || isBombAt(c, r, bombs);
+    }
+
     private boolean isBombAt(int c, int r, List<Bomb> bombs) {
         for (Bomb b : bombs) { if (b.getCol() == c && b.getRow() == r) return true; }
         return false;
     }
+    
     private Direction findSafestMove(GameMap map, boolean[][] dangerMap, List<Bomb> bombs) {
         List<Direction> safeDirections = new ArrayList<>();
-        int rows = dangerMap.length; int cols = dangerMap[0].length;
-        if (row - 1 >= 0 && !map.isTileSolid(col, row - 1) && !dangerMap[row - 1][col] && !isBombAt(col, row - 1, bombs)) safeDirections.add(Direction.UP);
-        if (row + 1 < rows && !map.isTileSolid(col, row + 1) && !dangerMap[row + 1][col] && !isBombAt(col, row + 1, bombs)) safeDirections.add(Direction.DOWN);
-        if (col - 1 >= 0 && !map.isTileSolid(col - 1, row) && !dangerMap[row][col - 1] && !isBombAt(col - 1, row, bombs)) safeDirections.add(Direction.LEFT);
-        if (col + 1 < cols && !map.isTileSolid(col + 1, row) && !dangerMap[row][col + 1] && !isBombAt(col + 1, row, bombs)) safeDirections.add(Direction.RIGHT);
+        if (!isBlocked(col, row - 1, map, dangerMap, bombs)) safeDirections.add(Direction.UP);
+        if (!isBlocked(col, row + 1, map, dangerMap, bombs)) safeDirections.add(Direction.DOWN);
+        if (!isBlocked(col - 1, row, map, dangerMap, bombs)) safeDirections.add(Direction.LEFT);
+        if (!isBlocked(col + 1, row, map, dangerMap, bombs)) safeDirections.add(Direction.RIGHT);
         if (!safeDirections.isEmpty()) { Collections.shuffle(safeDirections); return safeDirections.get(0); }
         return null; 
     }
+    
     private Direction getRandomValidDirection(GameMap map, boolean[][] dangerMap, List<Bomb> bombs) {
         Direction safest = findSafestMove(map, dangerMap, bombs);
         if (safest != null) return safest; 
+        
         List<Direction> validDirections = new ArrayList<>();
-        if (!map.isTileSolid(col, row - 1) && !isBombAt(col, row - 1, bombs)) validDirections.add(Direction.UP);
-        if (!map.isTileSolid(col, row + 1) && !isBombAt(col, row + 1, bombs)) validDirections.add(Direction.DOWN);
-        if (!map.isTileSolid(col - 1, row) && !isBombAt(col - 1, row, bombs)) validDirections.add(Direction.LEFT);
-        if (!map.isTileSolid(col + 1, row) && !isBombAt(col + 1, row, bombs)) validDirections.add(Direction.RIGHT);
+        if (!map.isTileSolid(col, row-1) && !isBombAt(col, row-1, bombs)) validDirections.add(Direction.UP);
+        if (!map.isTileSolid(col, row+1) && !isBombAt(col, row+1, bombs)) validDirections.add(Direction.DOWN);
+        if (!map.isTileSolid(col-1, row) && !isBombAt(col-1, row, bombs)) validDirections.add(Direction.LEFT);
+        if (!map.isTileSolid(col+1, row) && !isBombAt(col+1, row, bombs)) validDirections.add(Direction.RIGHT);
+
         if (!validDirections.isEmpty()) { Collections.shuffle(validDirections); return validDirections.get(0); }
         return currentDirection; 
     }
+
     private void moveTo(int targetCol, int targetRow) {
         this.state = State.MOVING;
         this.col = targetCol;
@@ -150,6 +159,7 @@ public class Enemy {
         this.targetX = targetCol * GameMap.TILE_SIZE + offset;
         this.targetY = targetRow * GameMap.TILE_SIZE + offset;
     }
+    
     private void moveToTarget() {
         if (x < targetX) { x += MOVE_SPEED; if (x >= targetX) x = targetX; }
         else if (x > targetX) { x -= MOVE_SPEED; if (x <= targetX) x = targetX; }
@@ -157,6 +167,7 @@ public class Enemy {
         else if (y > targetY) { y -= MOVE_SPEED; if (y <= targetY) y = targetY; }
         if (x == targetX && y == targetY) state = State.IDLE; 
     }
+    
     public int getCol() { return col; }
     public int getRow() { return row; }
 }

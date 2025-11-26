@@ -20,56 +20,54 @@ public class PowerUp {
         double x = col * GameMap.TILE_SIZE + (GameMap.TILE_SIZE - SIZE) / 2.0;
         double y = row * GameMap.TILE_SIZE + (GameMap.TILE_SIZE - SIZE) / 2.0;
 
-        // Sfondo PowerUp (Tile metallico)
+        // Sfondo
         gc.setFill(type.getColor());
         gc.fillRect(x, y, SIZE, SIZE);
         
-        // Bordo 3D
+        // Bordo
         gc.setStroke(Color.WHITE);
         gc.setLineWidth(2);
         gc.strokeRect(x, y, SIZE, SIZE);
         
-        // --- ICONE PIXEL ART ---
+        // Icone Pixel Art
         double cx = x + SIZE/2;
         double cy = y + SIZE/2;
 
         switch(type) {
-            case BOMB_UP: // Bomba Nera
+            case BOMB_UP: 
                 gc.setFill(Color.BLACK);
                 gc.fillOval(cx - 8, cy - 6, 16, 16);
-                gc.setFill(Color.WHITE); // Riflesso
+                gc.setFill(Color.WHITE); 
                 gc.fillOval(cx - 4, cy - 4, 4, 4);
                 break;
-            case FIRE_UP: // Fiamma Gialla/Rossa
+            case FIRE_UP: 
                 gc.setFill(Color.YELLOW);
-                // Fiamma base
                 gc.fillOval(cx - 6, cy - 4, 12, 12);
                 gc.fillPolygon(new double[]{cx-6, cx, cx+6}, new double[]{cy, cy-12, cy}, 3);
-                // Nucleo Rosso
                 gc.setFill(Color.RED);
                 gc.fillOval(cx - 3, cy - 1, 6, 6);
                 break;
-            case SPEED_UP: // Pattino Rosso
+            case SPEED_UP: 
                 gc.setFill(Color.RED);
-                gc.fillOval(cx - 10, cy, 20, 8); // Base
-                gc.fillRect(cx - 6, cy - 8, 12, 8); // Collo
-                gc.setFill(Color.WHITE); // Ruote
+                gc.fillOval(cx - 10, cy, 20, 8); 
+                gc.fillRect(cx - 6, cy - 8, 12, 8); 
+                gc.setFill(Color.WHITE); 
                 gc.fillOval(cx - 8, cy + 6, 4, 4);
                 gc.fillOval(cx + 4, cy + 6, 4, 4);
                 break;
-            case KICK: // Stivale Viola
+            case KICK: 
                 gc.setFill(Color.PURPLE);
-                gc.fillRect(cx - 6, cy - 8, 8, 12); // Gamba
-                gc.fillRect(cx - 6, cy + 4, 14, 6); // Piede
+                gc.fillRect(cx - 6, cy - 8, 8, 12); 
+                gc.fillRect(cx - 6, cy + 4, 14, 6); 
                 break;
-            case PUNCH: // Guanto Rosso
+            case PUNCH: 
                 gc.setFill(Color.RED);
                 gc.fillOval(cx - 8, cy - 8, 16, 16);
                 break;
-            case REMOTE: // Telecomando Grigio
+            case REMOTE: 
                 gc.setFill(Color.DARKGRAY);
                 gc.fillRect(cx - 6, cy - 8, 12, 16);
-                gc.setFill(Color.RED); // Bottone
+                gc.setFill(Color.RED); 
                 gc.fillOval(cx - 2, cy - 4, 4, 4);
                 break;
         }
