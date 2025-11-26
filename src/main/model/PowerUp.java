@@ -20,16 +20,13 @@ public class PowerUp {
         double x = col * GameMap.TILE_SIZE + (GameMap.TILE_SIZE - SIZE) / 2.0;
         double y = row * GameMap.TILE_SIZE + (GameMap.TILE_SIZE - SIZE) / 2.0;
 
-        // Sfondo
         gc.setFill(type.getColor());
         gc.fillRect(x, y, SIZE, SIZE);
         
-        // Bordo
         gc.setStroke(Color.WHITE);
         gc.setLineWidth(2);
         gc.strokeRect(x, y, SIZE, SIZE);
         
-        // Icone Pixel Art
         double cx = x + SIZE/2;
         double cy = y + SIZE/2;
 

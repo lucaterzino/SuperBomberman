@@ -1,4 +1,5 @@
 package main.controller;
+
 import javafx.scene.media.AudioClip;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
@@ -7,13 +8,8 @@ import javafx.util.Duration;
 import java.net.URL;
 import java.util.HashMap;
 
-/**
- * Gestore Audio Singleton per JavaFX.
- * Gestisce la riproduzione di effetti sonori (.wav) e musica (.mp3).
- */
 public class AudioManager {
 
-    // --- Singleton Pattern ---
     private static AudioManager instance;
 
     public static AudioManager getInstance() {
@@ -22,7 +18,6 @@ public class AudioManager {
         }
         return instance;
     }
-    // --- Fine Singleton Pattern ---
 
     private MediaPlayer musicPlayer;
     private HashMap<String, AudioClip> soundEffects;
@@ -31,12 +26,6 @@ public class AudioManager {
         soundEffects = new HashMap<>();
     }
 
-    /**
-     * Carica un effetto sonoro in memoria per un uso rapido.
-     * È buona norma caricarli tutti all'avvio del gioco.
-     * @param name Un nome per l'effetto (es. "bomb")
-     * @param filename Il percorso al file (es. "/sfx/bomb_place.wav")
-     */
     public void loadSoundEffect(String name, String filename) {
         try {
             URL resource = getClass().getResource(filename);
@@ -52,10 +41,6 @@ public class AudioManager {
         }
     }
 
-    /**
-     * Riproduce un effetto sonoro precedentemente caricato.
-     * @param name Il nome dell'effetto (es. "bomb")
-     */
     public void playSoundEffect(String name) {
         AudioClip clip = soundEffects.get(name);
         if (clip != null) {
@@ -65,18 +50,13 @@ public class AudioManager {
         }
     }
 
-    /**
-     * Riproduce una musica di sottofondo (file .mp3) in loop.
-     * @param filename Il percorso al file .mp3 (es. "/music/stage_theme.mp3")
-     */
     public void playMusic(String filename) {
-        stopMusic(); // Ferma la musica precedente
+        stopMusic(); 
         try {
             URL resource = getClass().getResource(filename);
             if (resource != null) {
                 Media media = new Media(resource.toExternalForm());
                 musicPlayer = new MediaPlayer(media);
-                // Imposta il loop
                 musicPlayer.setOnEndOfMedia(() -> {
                     musicPlayer.seek(Duration.ZERO);
                     musicPlayer.play();
@@ -91,9 +71,6 @@ public class AudioManager {
         }
     }
 
-    /**
-     * Ferma la musica di sottofondo (MP3) attualmente in riproduzione.
-     */
     public void stopMusic() {
         if (musicPlayer != null) {
             musicPlayer.stop();

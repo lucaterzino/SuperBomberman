@@ -1,6 +1,5 @@
 package main.controller;
 
-
 import javafx.animation.AnimationTimer;
 import javafx.fxml.FXML;
 import javafx.scene.canvas.Canvas;
@@ -10,7 +9,6 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.TextAlignment;
-//import main.AudioManager; 
 import main.Main;
 import main.model.*; 
 
@@ -56,7 +54,6 @@ public class GameController {
     private static final double WINDOW_WIDTH = 1024;
     private static final double WINDOW_HEIGHT = 768;
     
-    // Offset per centrare la mappa
     private static final double MAP_OFFSET_X = (WINDOW_WIDTH - (MAP_COLUMNS * GameMap.TILE_SIZE)) / 2;
     private static final double MAP_OFFSET_Y = HUD_HEIGHT + ((WINDOW_HEIGHT - HUD_HEIGHT - (MAP_ROWS * GameMap.TILE_SIZE)) / 2);
 
@@ -65,7 +62,7 @@ public class GameController {
     private int enemiesKilled = 0;
     private double timeLeft = 240.0; 
 
-    // Classe interna per sostituire java.awt.Point e rimuovere la dipendenza da AWT
+    // Classe interna per coordinate (sostituisce java.awt.Point)
     private static class Coord {
         int x, y;
         Coord(int x, int y) { this.x = x; this.y = y; }
@@ -74,7 +71,6 @@ public class GameController {
     public void initialize() {
         gc = gameCanvas.getGraphicsContext2D();
 
-        // Inizializza Mappa Fissa 13x11
         gameMap = new GameMap(MAP_COLUMNS, MAP_ROWS);
         this.dangerMap = new boolean[MAP_ROWS][MAP_COLUMNS];
 
@@ -447,11 +443,9 @@ public class GameController {
     }
 
     private void drawHUD() {
-        // Sfondo HUD
         gc.setFill(Color.web("#008000")); 
         gc.fillRect(0, 0, WINDOW_WIDTH, HUD_HEIGHT);
         
-        // Bordo Dorato
         gc.setStroke(Color.ORANGE);
         gc.setLineWidth(4);
         gc.strokeRect(2, 2, WINDOW_WIDTH-4, HUD_HEIGHT-4);
@@ -477,7 +471,7 @@ public class GameController {
         gc.setFill(Color.RED);
         gc.setStroke(Color.BLACK);
         gc.setLineWidth(1);
-        // Correzione: uso appendSVGPath invece di fillSVGPath per compatibilità
+        
         String heartPath = "M 12,4 Q 4,4 4,10 Q 4,18 12,24 Q 20,18 20,10 Q 20,4 12,4 z";
         gc.beginPath();
         gc.appendSVGPath(heartPath);

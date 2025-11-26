@@ -37,24 +37,19 @@ public class Objective {
         double x = centerX - currentSize / 2.0;
         double y = centerY - currentSize / 2.0;
 
-        // Ombra
         gc.setFill(Color.BLACK.deriveColor(0, 0, 0, 0.4));
         gc.fillOval(x + 4, y + 4, currentSize, currentSize);
 
-        // Corpo Perla
-        gc.setFill(Color.web("#00CED1")); // Dark Turquoise
+        gc.setFill(Color.web("#00CED1")); 
         gc.fillOval(x, y, currentSize, currentSize);
         
-        // Bordo
         gc.setStroke(Color.GOLD);
         gc.setLineWidth(3);
         gc.strokeOval(x, y, currentSize, currentSize);
 
-        // Riflesso
         gc.setFill(Color.WHITE);
         gc.fillOval(x + currentSize * 0.2, y + currentSize * 0.2, currentSize * 0.25, currentSize * 0.25);
         
-        // Scintillio
         gc.setStroke(Color.WHITE);
         gc.setLineWidth(2);
         double cx = x + currentSize * 0.3;

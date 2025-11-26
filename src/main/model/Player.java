@@ -61,52 +61,41 @@ public class Player {
     }
 
     public void draw(GraphicsContext gc) {
-        // --- PIXEL ART BOMBERMAN ---
         double cx = x + SIZE / 2;
 
-        // Ombra
         gc.setFill(Color.rgb(0, 0, 0, 0.4));
         gc.fillOval(x + 8, y + SIZE - 8, SIZE - 16, 8);
 
-        // Corpo (Blu)
         gc.setFill(Color.BLUE);
         gc.fillRect(x + 14, y + 24, 20, 14);
         
-        // Cintura (Bianca/Nera)
         gc.setFill(Color.BLACK);
         gc.fillRect(x + 14, y + 34, 20, 4);
         gc.setFill(Color.GOLD);
         gc.fillRect(x + 22, y + 34, 4, 4);
 
-        // Testa (Bianca)
         gc.setFill(Color.WHITE);
         gc.fillRect(x + 10, y + 4, 28, 26); 
         
-        // Contorno Testa
         gc.setStroke(Color.BLACK);
         gc.setLineWidth(2);
         gc.strokeRect(x + 10, y + 4, 28, 26);
 
-        // Viso (Occhi linee)
         gc.setFill(Color.BLACK);
-        gc.fillRect(cx - 6, y + 14, 4, 8); // SX
-        gc.fillRect(cx + 2, y + 14, 4, 8); // DX
+        gc.fillRect(cx - 6, y + 14, 4, 8); 
+        gc.fillRect(cx + 2, y + 14, 4, 8); 
         
-        // Sopracciglia
         gc.strokeLine(cx - 8, y + 12, cx - 2, y + 16);
         gc.strokeLine(cx + 8, y + 12, cx + 2, y + 16);
 
-        // Mani (Rosa)
         gc.setFill(Color.MAGENTA);
-        gc.fillOval(x + 4, y + 24, 10, 10); // SX
-        gc.fillOval(x + 34, y + 24, 10, 10); // DX
+        gc.fillOval(x + 4, y + 24, 10, 10); 
+        gc.fillOval(x + 34, y + 24, 10, 10); 
 
-        // Piedi (Rosa)
         gc.setFill(Color.MAGENTA);
-        gc.fillOval(x + 10, y + 38, 12, 10); // SX
-        gc.fillOval(x + 26, y + 38, 12, 10); // DX
+        gc.fillOval(x + 10, y + 38, 12, 10); 
+        gc.fillOval(x + 26, y + 38, 12, 10); 
         
-        // Pom-pom (Antenna)
         gc.setFill(Color.MAGENTA);
         gc.fillRect(cx - 4, y - 4, 8, 8);
     }

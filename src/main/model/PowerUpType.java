@@ -3,12 +3,12 @@ package main.model;
 import javafx.scene.paint.Color;
 
 public enum PowerUpType {
-    BOMB_UP(Color.BLACK),        // Aumenta numero bombe
-    FIRE_UP(Color.ORANGERED),    // Aumenta raggio esplosione
-    SPEED_UP(Color.CYAN),        // Aumenta velocità
-    KICK(Color.PURPLE),          // Calcia bombe --- (Implementazione futura)
-    PUNCH(Color.YELLOW),         // Lancia bombe ---(Implementazione futura)
-    REMOTE(Color.LIGHTGREEN);    // Detonatore remoto
+    BOMB_UP(Color.BLACK),
+    FIRE_UP(Color.ORANGERED),
+    SPEED_UP(Color.CYAN),
+    KICK(Color.PURPLE),
+    PUNCH(Color.YELLOW),
+    REMOTE(Color.LIGHTGREEN);
 
     private final Color color;
 

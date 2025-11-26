@@ -59,10 +59,8 @@ public class GameMap {
                 double x = c * TILE_SIZE;
                 double y = r * TILE_SIZE;
 
-                // --- PAVIMENTO (Pixel Art Erba) ---
-                gc.setFill(Color.web("#2E8B57")); // SeaGreen base
+                gc.setFill(Color.web("#2E8B57")); 
                 gc.fillRect(x, y, TILE_SIZE, TILE_SIZE);
-                // Dettagli erba
                 gc.setFill(Color.web("#3CB371")); 
                 gc.fillRect(x + 5, y + 5, 4, 4);
                 gc.fillRect(x + 40, y + 15, 4, 4);
@@ -70,7 +68,6 @@ public class GameMap {
                 gc.fillRect(x + 50, y + 50, 4, 4);
 
                 if (type == TileType.WALL) {
-                    // --- MURO INDISTRUTTIBILE ---
                     gc.setFill(Color.web("#555555"));
                     gc.fillRect(x, y, TILE_SIZE, TILE_SIZE);
                     gc.setFill(Color.web("#AAAAAA"));
@@ -85,7 +82,6 @@ public class GameMap {
                     gc.fillRect(x + 14, y + 14, TILE_SIZE - 28, TILE_SIZE - 28);
                 }
                 else if (type == TileType.BRICK) {
-                    // --- MATTONE DISTRUTTIBILE ---
                     gc.setFill(Color.web("#D2691E")); 
                     gc.fillRect(x, y, TILE_SIZE, TILE_SIZE);
                     gc.setStroke(Color.BLACK);

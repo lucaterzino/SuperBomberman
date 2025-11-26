@@ -45,34 +45,24 @@ public class Enemy {
     }
 
     public void draw(GraphicsContext gc) {
-        // --- PIXEL ART BALLOOM (Nemico Palloncino) ---
-        
-        // Corpo (Arancione)
         gc.setFill(Color.ORANGERED);
-        // Centro
         gc.fillRect(x + 8, y + 8, SIZE - 16, SIZE - 16);
-        // Lati
         gc.fillRect(x + 4, y + 12, 4, SIZE - 24);
         gc.fillRect(x + SIZE - 8, y + 12, 4, SIZE - 24);
-        // Alto/Basso
         gc.fillRect(x + 12, y + 4, SIZE - 24, 4);
         gc.fillRect(x + 12, y + SIZE - 8, SIZE - 24, 4);
         
-        // Faccia (Bianca)
         double cx = x + SIZE/2;
         double cy = y + SIZE/2;
         
-        // Occhi (Linee nere su bianco)
         gc.setFill(Color.BLACK);
-        gc.fillRect(cx - 10, cy - 6, 4, 8); // SX
-        gc.fillRect(cx + 6, cy - 6, 4, 8);  // DX
+        gc.fillRect(cx - 10, cy - 6, 4, 8); 
+        gc.fillRect(cx + 6, cy - 6, 4, 8);  
         
-        // Riflesso occhi (Bianco)
         gc.setFill(Color.WHITE);
         gc.fillRect(cx - 10, cy - 6, 2, 2);
         gc.fillRect(cx + 6, cy - 6, 2, 2);
         
-        // Bocca (ZigZag arancione scuro)
         gc.setStroke(Color.DARKRED);
         gc.setLineWidth(2);
         gc.strokeLine(cx - 8, cy + 8, cx - 4, cy + 12);
@@ -141,13 +131,11 @@ public class Enemy {
     private Direction getRandomValidDirection(GameMap map, boolean[][] dangerMap, List<Bomb> bombs) {
         Direction safest = findSafestMove(map, dangerMap, bombs);
         if (safest != null) return safest; 
-        
         List<Direction> validDirections = new ArrayList<>();
         if (!map.isTileSolid(col, row-1) && !isBombAt(col, row-1, bombs)) validDirections.add(Direction.UP);
         if (!map.isTileSolid(col, row+1) && !isBombAt(col, row+1, bombs)) validDirections.add(Direction.DOWN);
         if (!map.isTileSolid(col-1, row) && !isBombAt(col-1, row, bombs)) validDirections.add(Direction.LEFT);
         if (!map.isTileSolid(col+1, row) && !isBombAt(col+1, row, bombs)) validDirections.add(Direction.RIGHT);
-
         if (!validDirections.isEmpty()) { Collections.shuffle(validDirections); return validDirections.get(0); }
         return currentDirection; 
     }
