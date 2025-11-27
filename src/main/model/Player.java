@@ -33,6 +33,8 @@ public class Player {
     private double targetX, targetY; 
     private double offset; 
     private State state = State.IDLE;
+    
+    private int immunityFrames = 0;
 
     public Player(int startCol, int startRow, double offset) {
         this.col = startCol;
@@ -45,6 +47,10 @@ public class Player {
     }
 
     public void update() {
+        if (immunityFrames > 0) {
+            immunityFrames--;
+        }
+
         if (state == State.IDLE) return;
 
         if (x < targetX) { x += moveSpeed; if (x >= targetX) x = targetX; }
@@ -59,8 +65,18 @@ public class Player {
             state = State.IDLE; 
         }
     }
+    
+    public void activateImmunity(int frames) {
+        this.immunityFrames = frames;
+    }
+    
+    public boolean isImmune() {
+        return immunityFrames > 0;
+    }
 
     public void draw(GraphicsContext gc) {
+        if (immunityFrames > 0 && (immunityFrames / 4) % 2 == 0) return;
+
         double cx = x + SIZE / 2;
 
         gc.setFill(Color.rgb(0, 0, 0, 0.4));

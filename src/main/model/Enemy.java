@@ -22,8 +22,12 @@ public class Enemy {
     private State state = State.IDLE;
     private Direction currentDirection; 
     private Random rand = new Random();
+    
+    private int startCol, startRow;
 
     public Enemy(int startCol, int startRow, double offset) {
+        this.startCol = startCol;
+        this.startRow = startRow;
         this.col = startCol;
         this.row = startRow;
         this.offset = offset;
@@ -31,6 +35,19 @@ public class Enemy {
         this.y = row * GameMap.TILE_SIZE + offset;
         this.targetX = x;
         this.targetY = y;
+        this.currentDirection = Direction.values()[rand.nextInt(Direction.values().length)];
+    }
+
+    // Metodo per resettare il nemico alla posizione originale
+    public void resetPosition() {
+        this.col = startCol;
+        this.row = startRow;
+        this.x = col * GameMap.TILE_SIZE + offset;
+        this.y = row * GameMap.TILE_SIZE + offset;
+        this.targetX = x;
+        this.targetY = y;
+        this.state = State.IDLE;
+        // Opzionale: cambia direzione casuale al reset
         this.currentDirection = Direction.values()[rand.nextInt(Direction.values().length)];
     }
 

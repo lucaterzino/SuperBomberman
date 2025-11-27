@@ -9,9 +9,11 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.TextAlignment;
+//import main.AudioManager; 
 import main.Main;
 import main.model.*; 
 
+import java.awt.Point; 
 import java.util.ArrayList; 
 import java.util.Iterator; 
 import java.util.List; 
@@ -26,16 +28,26 @@ public class GameController {
     private Main mainApp; 
     private AnimationTimer gameLoop;
 
+    // Stati del Gioco
+    private enum GameState {
+        PLAYING,
+        PAUSED,
+        RESPAWNING,
+        GAME_OVER,
+        VICTORY      // Stato vittoria
+    }
+    
+    private GameState currentState = GameState.PLAYING;
+    private double stateTimer = 0; // Timer generico per transizioni (Respawn, Victory)
+
     private List<Bomb> bombs = new ArrayList<>();
     private List<Enemy> enemies = new ArrayList<>();
     private List<PowerUp> powerUps = new ArrayList<>(); 
     private List<Objective> objectives = new ArrayList<>(); 
     
-    private boolean gameWon = false; 
-    private boolean gameOver = false;
-
     private boolean bombKeyPressed = false; 
     private boolean remoteKeyPressed = false; 
+    private boolean pauseKeyPressed = false;
 
     private double enemyOffset = 0; 
     private boolean[][] dangerMap; 
@@ -62,7 +74,6 @@ public class GameController {
     private int enemiesKilled = 0;
     private double timeLeft = 240.0; 
 
-    // Classe interna per coordinate (sostituisce java.awt.Point)
     private static class Coord {
         int x, y;
         Coord(int x, int y) { this.x = x; this.y = y; }
@@ -110,7 +121,6 @@ public class GameController {
     
     private void spawnObjectives(int cols, int rows) {
         objectives.clear();
-        gameWon = false;
         List<Coord> emptyLocations = new ArrayList<>();
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
@@ -132,12 +142,26 @@ public class GameController {
     }
 
     public void onKeyPressed(KeyCode code) {
-        if (gameWon || gameOver) {
+        // Gestione Pausa
+        if (code == KeyCode.ENTER) {
+            if (currentState != GameState.GAME_OVER && currentState != GameState.VICTORY) {
+                if (!pauseKeyPressed) {
+                    pauseKeyPressed = true;
+                    togglePause();
+                }
+                return; 
+            }
+        }
+
+        // Uscita rapida da Game Over o Victory (opzionale, se l'utente non vuole aspettare i 10s)
+        if (currentState == GameState.GAME_OVER || currentState == GameState.VICTORY) {
             if (code == KeyCode.ENTER || code == KeyCode.ESCAPE) {
                 if (mainApp != null) mainApp.showMenuScreen();
             }
             return;
         }
+
+        if (currentState == GameState.PAUSED || currentState == GameState.RESPAWNING) return;
 
         if (player.isIdle()) {
             int targetCol = player.getCol();
@@ -174,13 +198,21 @@ public class GameController {
     public void onKeyReleased(KeyCode code) {
         if (code == KeyCode.Z) bombKeyPressed = false;
         if (code == KeyCode.X) remoteKeyPressed = false;
+        if (code == KeyCode.ENTER) pauseKeyPressed = false;
+    }
+    
+    private void togglePause() {
+        if (currentState == GameState.PLAYING) {
+            currentState = GameState.PAUSED;
+        } else if (currentState == GameState.PAUSED) {
+            currentState = GameState.PLAYING;
+        }
     }
 
     public void setMainApp(Main mainApp) { this.mainApp = mainApp; }
 
     public void startGame() {
-        AudioManager.getInstance().playMusic("/music/game_theme.mp3");
-        
+        // Reset
         gameMap = new GameMap(MAP_COLUMNS, MAP_ROWS); 
         player = new Player(1, 1, (GameMap.TILE_SIZE - Player.SIZE) / 2.0); 
         spawnEnemies(MAP_COLUMNS, MAP_ROWS);
@@ -193,8 +225,7 @@ public class GameController {
         score = 0;
         enemiesKilled = 0;
         timeLeft = 240.0; 
-        gameWon = false;
-        gameOver = false;
+        currentState = GameState.PLAYING;
         
         lastFrameTime = System.nanoTime();
         gameLoop.start();
@@ -202,7 +233,6 @@ public class GameController {
     }
 
     public void stopGame() {
-        AudioManager.getInstance().stopMusic();
         gameLoop.stop();
         bombs.clear();
         enemies.clear(); 
@@ -211,7 +241,26 @@ public class GameController {
     }
 
     private void update(double deltaTime) {
-        if (gameWon || gameOver) return; 
+        if (currentState == GameState.PAUSED) return;
+
+        // Gestione timer per schermate temporanee (Respawn e Victory)
+        if (currentState == GameState.RESPAWNING) {
+            stateTimer -= deltaTime;
+            if (stateTimer <= 0) finishRespawn();
+            return;
+        }
+        
+        // --- NUOVA LOGICA VICTORY ---
+        if (currentState == GameState.VICTORY) {
+            stateTimer -= deltaTime;
+            if (stateTimer <= 0) {
+                // Torna al menu automaticamente
+                if (mainApp != null) mainApp.showMenuScreen();
+            }
+            return;
+        }
+        
+        if (currentState == GameState.GAME_OVER) return; 
 
         timeLeft -= deltaTime;
         if (timeLeft <= 0) {
@@ -240,10 +289,20 @@ public class GameController {
     private void handleDeath() {
         lives--;
         if (lives > 0) {
-            player = new Player(1, 1, (GameMap.TILE_SIZE - Player.SIZE) / 2.0);
+            currentState = GameState.RESPAWNING;
+            stateTimer = 3.0; 
         } else {
-            gameOver = true;
+            currentState = GameState.GAME_OVER;
         }
+    }
+    
+    private void finishRespawn() {
+        double playerOffset = (GameMap.TILE_SIZE - Player.SIZE) / 2.0;
+        player = new Player(1, 1, playerOffset);
+        player.activateImmunity(30);
+        for (Enemy enemy : enemies) enemy.resetPosition();
+        bombs.clear();
+        currentState = GameState.PLAYING;
     }
 
     private void checkObjectiveCollection() {
@@ -254,7 +313,11 @@ public class GameController {
                 player.collectObjective();
                 it.remove();
                 score += 1000; 
-                if (player.hasWon()) gameWon = true;
+                if (player.hasWon()) {
+                    // --- ATTIVAZIONE VITTORIA ---
+                    currentState = GameState.VICTORY;
+                    stateTimer = 10.0; // 10 secondi di schermata vittoria
+                }
             }
         }
     }
@@ -359,9 +422,12 @@ public class GameController {
     }
     
     private void checkPlayerCollisions() {
+        if (player.isImmune()) return;
+
         for (Enemy enemy : enemies) {
             if (enemy.getCol() == player.getCol() && enemy.getRow() == player.getRow()) {
                 handleDeath();
+                break;
             }
         }
     }
@@ -396,6 +462,17 @@ public class GameController {
     }
 
     private void draw() {
+        if (currentState == GameState.RESPAWNING) {
+            drawRespawnScreen();
+            return;
+        }
+        
+        // --- NUOVO: Se vittoria, disegna solo la schermata vittoria ---
+        if (currentState == GameState.VICTORY) {
+            drawVictoryScreen();
+            return;
+        }
+
         gc.setFill(Color.BLACK);
         gc.fillRect(0, 0, gameCanvas.getWidth(), gameCanvas.getHeight());
 
@@ -417,11 +494,49 @@ public class GameController {
         
         gc.restore(); 
 
-        if (gameWon) {
-            drawOverlay("VITTORIA!", Color.GOLD);
-        } else if (gameOver) {
+        if (currentState == GameState.GAME_OVER) {
             drawOverlay("GAME OVER", Color.RED);
+        } else if (currentState == GameState.PAUSED) {
+            drawOverlay("PAUSA", Color.LIGHTBLUE);
         }
+    }
+    
+    private void drawRespawnScreen() {
+        gc.setFill(Color.BLACK);
+        gc.fillRect(0, 0, gameCanvas.getWidth(), gameCanvas.getHeight());
+        
+        gc.setFont(Font.font("Monospaced", FontWeight.BOLD, 50));
+        gc.setTextAlign(TextAlignment.CENTER);
+        
+        gc.setFill(Color.WHITE);
+        gc.fillText("VITE RIMASTE: " + lives, gameCanvas.getWidth()/2, gameCanvas.getHeight()/2);
+        
+        gc.setTextAlign(TextAlignment.LEFT);
+    }
+
+    // --- NUOVO METODO: Schermata Vittoria ---
+    private void drawVictoryScreen() {
+        gc.setFill(Color.BLACK);
+        gc.fillRect(0, 0, gameCanvas.getWidth(), gameCanvas.getHeight());
+        
+        gc.setTextAlign(TextAlignment.CENTER);
+        
+        // Scritta VICTORY
+        gc.setFont(Font.font("Monospaced", FontWeight.BOLD, 80));
+        gc.setFill(Color.GOLD);
+        gc.fillText("VICTORY", gameCanvas.getWidth()/2, gameCanvas.getHeight()/2 - 50);
+        
+        // Dettagli punteggio
+        gc.setFont(Font.font("Monospaced", FontWeight.BOLD, 30));
+        gc.setFill(Color.WHITE);
+        gc.fillText("Punteggio Finale: " + score, gameCanvas.getWidth()/2, gameCanvas.getHeight()/2 + 20);
+        
+        // Timer countdown per il menu
+        gc.setFont(Font.font("Monospaced", 20));
+        gc.setFill(Color.LIGHTGRAY);
+        gc.fillText("Menu in " + (int)Math.ceil(stateTimer) + "...", gameCanvas.getWidth()/2, gameCanvas.getHeight()/2 + 80);
+        
+        gc.setTextAlign(TextAlignment.LEFT);
     }
     
     private void drawDecorativeBackground() {
@@ -457,7 +572,6 @@ public class GameController {
         double startX = 40;
 
         drawMiniPlayerHead(startX, centerY - 15);
-        
         startX += 45; 
 
         double heartSize = 1.5;
@@ -573,11 +687,15 @@ public class GameController {
         gc.setTextAlign(TextAlignment.CENTER);
         gc.fillText(title, gameCanvas.getWidth()/2, gameCanvas.getHeight()/2);
         gc.setFont(new Font("Arial", 20));
-        gc.setFill(Color.WHITE);
-        gc.fillText("Premi ENTER per tornare al menu", gameCanvas.getWidth()/2, gameCanvas.getHeight()/2 + 50);
-        if (gameWon) {
-             gc.fillText("Punteggio Finale: " + score, gameCanvas.getWidth()/2, gameCanvas.getHeight()/2 + 90);
+        
+        if (title.equals("PAUSA")) {
+            gc.setFill(Color.WHITE);
+            gc.fillText("Premi INVIO per riprendere", gameCanvas.getWidth()/2, gameCanvas.getHeight()/2 + 50);
+        } else {
+            gc.setFill(Color.WHITE);
+            gc.fillText("Premi ENTER per tornare al menu", gameCanvas.getWidth()/2, gameCanvas.getHeight()/2 + 50);
         }
+        
         gc.setTextAlign(TextAlignment.LEFT);
     }
 }
