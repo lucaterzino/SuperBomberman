@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- Contenitore principale della Splash Screen. Copre l'intera finestra (1024x768). -->
+<StackPane fx:id="rootPane" 
+           maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" 
+           prefHeight="768.0" prefWidth="1024.0" 
+           style="-fx-background-color: #808080;" 
+           xmlns="http://javafx.com/javafx/11.0.1" 
+           xmlns:fx="http://javafx.com/fxml/1" 
+           fx:controller="main.controller.SplashController">
+    
+    <!-- Elementi importati -->
+    <?import javafx.geometry.Insets?>
+    <?import javafx.scene.control.Button?>
+    <?import javafx.scene.control.ProgressBar?>
+    <?import javafx.scene.layout.StackPane?>
+    <?import javafx.scene.layout.VBox?>
+    <?import javafx.scene.text.Font?>
+
+    <children>
+        <!-- Contenitore VBox per il bottone e la barra di caricamento.
+             È centrato verticalmente e orizzontalmente grazie allo StackPane. -->
+        <VBox fx:id="loadingContainer" alignment="CENTER" spacing="30.0">
+            <children>
+                
+                <!-- Bottone "PLAY NOW" -->
+                <Button fx:id="playNowButton" 
+                        mnemonicParsing="false" 
+                        onAction="#handlePlayNow" 
+                        style="-fx-background-color: #87CEEB; -fx-text-fill: white; -fx-cursor: hand; -fx-background-radius: 10;" 
+                        text="PLAY NOW">
+                    <font>
+                        <!-- Font stile arcade/monospaced -->
+                        <Font name="Monospaced Bold" size="36.0" />
+                    </font>
+                    <padding>
+                        <!-- Padding interno per rendere il bottone rettangolare e grande -->
+                        <Insets bottom="15.0" left="40.0" right="40.0" top="15.0" />
+                    </padding>
+                </Button>
+                
+                <!-- Barra di caricamento. Inizialmente invisibile (visible="false"). -->
+                <ProgressBar fx:id="loadingBar" 
+                             prefHeight="30.0" prefWidth="500.0" 
+                             progress="0.0" 
+                             style="-fx-accent: #87CEEB; -fx-control-inner-background: #555555;" 
+                             visible="false" />
+            </children>
+        </VBox>
+        
+        <!-- NOTA: Il Canvas per il logo HUDSON SOFT
+             viene creato dinamicamente nel controller (SplashController.java) 
+             per evitare problemi di sovrapposizione. -->
+    </children>
+</StackPane>
