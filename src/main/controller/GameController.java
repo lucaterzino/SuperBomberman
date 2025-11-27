@@ -438,10 +438,6 @@ public class GameController {
         }
     }
     
-    private void checkEnemyHit(int col, int row) {
-        boolean removed = enemies.removeIf(enemy -> enemy.getCol() == col && enemy.getRow() == row);
-        if (removed) { score += 200; enemiesKilled++; }
-    }
     
     // Controlla la collisione tra giocatore e nemico.
     private void checkPlayerCollisions() {
