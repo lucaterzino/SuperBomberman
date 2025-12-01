@@ -1,11 +1,12 @@
 {
   "version": "0.2.0",
   "configurations": [
+
     {
       "type": "java",
       "name": "Run Gioco2D",
       "request": "launch",
-      "mainClass": "main.Main",
+      "mainClass": "main.Gioco",
       "vmArgs": "--module-path C:/javafx-sdk-25.0.1/lib --enable-native-access=javafx.graphics --add-modules javafx.controls,javafx.fxml,javafx.graphics" 
     }
   ]
