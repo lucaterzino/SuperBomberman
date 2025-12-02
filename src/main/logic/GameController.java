@@ -7,16 +7,15 @@ import javafx.scene.input.KeyCode;
 import main.Gioco;
 import main.view.GameRenderer;
 
-import java.util.ArrayList; 
-import java.util.Iterator; 
-import java.util.List; 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Random;
 
 public class GameController {
 
     @FXML private Canvas gameCanvas;
-    // VIEW
-    private GameRenderer renderer; 
+    private GameRenderer renderer;
     
     private Player player;
     private GameMap gameMap; 
@@ -49,14 +48,13 @@ public class GameController {
     
     private static final int MAX_PLAYER_POWERUPS = 2;
     
-    // Dimensioni Logiche
+    // Dimensioni
     private static final int MAP_COLUMNS = 13;
     private static final int MAP_ROWS = 11;
     private static final double WINDOW_WIDTH = 1024;
     private static final double WINDOW_HEIGHT = 768;
     private static final double HUD_HEIGHT = 80;
     
-    // Offset calcolati per il Renderer
     private static final double MAP_OFFSET_X = (WINDOW_WIDTH - (MAP_COLUMNS * GameMap.TILE_SIZE)) / 2;
     private static final double MAP_OFFSET_Y = HUD_HEIGHT + ((WINDOW_HEIGHT - HUD_HEIGHT - (MAP_ROWS * GameMap.TILE_SIZE)) / 2);
 
@@ -71,10 +69,7 @@ public class GameController {
     }
 
     public void initialize() {
-        // Inizializza la View passando il contesto grafico
         renderer = new GameRenderer(gameCanvas.getGraphicsContext2D(), WINDOW_WIDTH, WINDOW_HEIGHT);
-
-        // Inizializza il Model
         gameMap = new GameMap(MAP_COLUMNS, MAP_ROWS);
         this.dangerMap = new boolean[MAP_ROWS][MAP_COLUMNS];
 
@@ -94,9 +89,8 @@ public class GameController {
                 if (deltaNano >= TARGET_NANO_PER_FRAME) {
                     double deltaTimeSeconds = deltaNano / 1_000_000_000.0;
                     lastFrameTime = now - (long)(deltaNano % TARGET_NANO_PER_FRAME);
-                    
                     update(deltaTimeSeconds);
-                    draw(); // Delega alla View
+                    draw(); 
                 }
             }
         };
@@ -107,12 +101,8 @@ public class GameController {
         this.mainApp = mainApp; 
     }
     
-    // --- METODI DI DISEGNO (DELEGA ALLA VIEW) ---
     private void draw() {
-        // 1. Pulisci schermo
         renderer.clear();
-
-        // 2. Schermate speciali (Respawn, Vittoria)
         if (currentState == GameState.RESPAWNING) {
             renderer.drawRespawnScreen(lives);
             return;
@@ -122,24 +112,18 @@ public class GameController {
             return;
         }
 
-        // 3. HUD
         renderer.drawHUD(lives, score, enemiesKilled, timeLeft, player.getActivePowerUps());
-        
-        // 4. Scena di Gioco (Mappa + Entità)
         renderer.drawGameScene(
             gameMap, player, enemies, bombs, explosions, powerUps, objectives, 
             MAP_OFFSET_X, MAP_OFFSET_Y
         );
 
-        // 5. Overlay (Pausa, Game Over)
         if (currentState == GameState.GAME_OVER) {
             renderer.drawGameOverOverlay();
         } else if (currentState == GameState.PAUSED) {
             renderer.drawPauseOverlay();
         }
     }
-
-    // --- LOGICA DI GIOCO ---
 
     private void update(double deltaTime) {
         if (currentState == GameState.PAUSED) return;
@@ -174,7 +158,6 @@ public class GameController {
         updateBombs(); 
         
         for (Objective obj : objectives) obj.update();
-
         checkPowerUpCollection(); 
         checkObjectiveCollection(); 
 
@@ -289,7 +272,6 @@ public class GameController {
         player = new Player(1, 1, (GameMap.TILE_SIZE - Player.SIZE) / 2.0); 
         spawnEnemies(MAP_COLUMNS, MAP_ROWS);
         spawnObjectives(MAP_COLUMNS, MAP_ROWS);
-        
         powerUps.clear(); 
         bombs.clear();
         explosions.clear(); 
@@ -298,7 +280,6 @@ public class GameController {
         enemiesKilled = 0;
         timeLeft = 240.0; 
         currentState = GameState.PLAYING;
-        
         lastFrameTime = System.nanoTime();
         gameLoop.start();
         gameCanvas.requestFocus(); 

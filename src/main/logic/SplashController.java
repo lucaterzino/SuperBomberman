@@ -13,7 +13,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 import main.Gioco;
-import main.view.SplashRenderer;
+import main.view.SplashRenderer; // Import View
 
 public class SplashController {
 
@@ -48,8 +48,8 @@ public class SplashController {
         
         Canvas logoCanvas = new Canvas(1024, 768);
         rootPane.getChildren().add(logoCanvas); 
-        
-        // Usa il renderer
+
+        // Usa il Renderer per disegnare il logo
         SplashRenderer renderer = new SplashRenderer(logoCanvas.getGraphicsContext2D(), 1024, 768);
         renderer.drawHudsonLogo();
 

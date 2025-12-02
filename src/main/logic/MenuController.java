@@ -3,7 +3,6 @@ package main.logic;
 import javafx.animation.AnimationTimer;
 import javafx.fxml.FXML;
 import javafx.scene.canvas.Canvas;
-import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import main.Gioco;
@@ -12,7 +11,7 @@ import main.view.MenuRenderer;
 public class MenuController {
 
     @FXML private Canvas menuCanvas;
-    private MenuRenderer renderer; // View
+    private MenuRenderer renderer; // VIEW
     private Gioco mainApp;
     private AnimationTimer menuLoop;
 
@@ -28,8 +27,8 @@ public class MenuController {
 
     @FXML
     public void initialize() {
-        GraphicsContext gc = menuCanvas.getGraphicsContext2D();
-        renderer = new MenuRenderer(gc, menuCanvas.getWidth(), menuCanvas.getHeight());
+        // Inizializza Renderer (View)
+        renderer = new MenuRenderer(menuCanvas.getGraphicsContext2D(), 1024, 768);
 
         menuLoop = new AnimationTimer() {
             @Override
@@ -77,6 +76,7 @@ public class MenuController {
     }
 
     private void draw() {
+        // Delega disegno al Renderer
         renderer.drawMenu(time, cloudX, options, selectedIndex);
     }
 }
