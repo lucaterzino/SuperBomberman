@@ -7,9 +7,9 @@ import javafx.scene.input.KeyCode;
 import main.Gioco;
 import main.view.GameRenderer;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.ArrayList; 
+import java.util.Iterator; 
+import java.util.List; 
 import java.util.Random;
 
 public class GameController {
@@ -48,7 +48,6 @@ public class GameController {
     
     private static final int MAX_PLAYER_POWERUPS = 2;
     
-    // Dimensioni
     private static final int MAP_COLUMNS = 13;
     private static final int MAP_ROWS = 11;
     private static final double WINDOW_WIDTH = 1024;
@@ -119,9 +118,9 @@ public class GameController {
         );
 
         if (currentState == GameState.GAME_OVER) {
-            renderer.drawGameOverOverlay();
+            renderer.drawGameOverOverlay(); // Metodo dedicato nel renderer
         } else if (currentState == GameState.PAUSED) {
-            renderer.drawPauseOverlay();
+            renderer.drawPauseOverlay(); // Metodo dedicato nel renderer
         }
     }
 
@@ -164,11 +163,14 @@ public class GameController {
         Iterator<Enemy> enemyIterator = enemies.iterator();
         while (enemyIterator.hasNext()) {
             Enemy enemy = enemyIterator.next();
-            enemy.update(gameMap, dangerMap, bombs); 
+            // --- MODIFICA: Passaggio del player all'update del nemico per l'IA ---
+            enemy.update(gameMap, dangerMap, bombs, player); 
         }
         
         checkPlayerCollisions();
     }
+    
+    // ... (Metodi spawnEnemies, spawnObjectives, onKeyPressed, ecc. identici a prima)
 
     private void spawnEnemies(int columns, int rows) {
         enemies.clear(); 

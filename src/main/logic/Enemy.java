@@ -10,7 +10,8 @@ public class Enemy {
     private enum Direction { UP, DOWN, LEFT, RIGHT }
     
     public static final double SIZE = 48; 
-    private static final double MOVE_SPEED = 4.75; 
+    private static final double MOVE_SPEED = 4.5; 
+    private static final int CHASE_RADIUS = 5; // Raggio di inseguimento (in caselle)
 
     private double x, y; 
     private int col, row; 
@@ -35,7 +36,6 @@ public class Enemy {
         this.currentDirection = Direction.values()[rand.nextInt(Direction.values().length)];
     }
 
-    // Metodo per resettare il nemico alla posizione originale
     public void resetPosition() {
         this.col = startCol;
         this.row = startRow;
@@ -47,18 +47,19 @@ public class Enemy {
         this.currentDirection = Direction.values()[rand.nextInt(Direction.values().length)];
     }
 
-    public void update(GameMap map, boolean[][] dangerMap, List<Bomb> bombs) {
+    // Aggiornato per ricevere il Player
+    public void update(GameMap map, boolean[][] dangerMap, List<Bomb> bombs, Player player) {
         if (state == State.MOVING) {
             moveToTarget();
             return;
         }
         if (state == State.IDLE) {
-            decideNextMove(map, dangerMap, bombs);
+            decideNextMove(map, dangerMap, bombs, player);
         }
     }
 
-    private void decideNextMove(GameMap map, boolean[][] dangerMap, List<Bomb> bombs) {
-        // 1. Se la casella attuale è pericolosa, cerca via di fuga
+    private void decideNextMove(GameMap map, boolean[][] dangerMap, List<Bomb> bombs, Player player) {
+        // 1. PRIORITÀ ALTA: Fuga dal pericolo (Bomba vicina)
         if (dangerMap[row][col]) {
             Direction safeDir = findSafestMove(map, dangerMap, bombs);
             if (safeDir != null) {
@@ -67,9 +68,20 @@ public class Enemy {
             }
         }
         
-        // 2. Calcola la prossima mossa basata sulla direzione corrente
+        // 2. PRIORITÀ MEDIA: Inseguimento Giocatore
+        if (player != null && isPlayerInRadius(player)) {
+            Direction chaseDir = getChaseDirection(map, dangerMap, bombs, player);
+            if (chaseDir != null) {
+                currentDirection = chaseDir;
+                // Continua sotto per applicare il movimento con i controlli standard
+            }
+        }
+        
+        // 3. MOVIMENTO STANDARD (Casuale o continuativo)
         int targetCol = col;
         int targetRow = row;
+        
+        // Prova a mantenere la direzione corrente (inclusa quella di inseguimento appena calcolata)
         switch (currentDirection) {
             case UP: targetRow--; break;
             case DOWN: targetRow++; break;
@@ -77,13 +89,12 @@ public class Enemy {
             case RIGHT: targetCol++; break;
         }
         
-        // 3. Se bloccato o in pericolo, cambia direzione
+        // Se la direzione è bloccata, ne sceglie una nuova valida a caso
         if (isBlocked(targetCol, targetRow, map, dangerMap, bombs)) {
             currentDirection = getRandomValidDirection(map, dangerMap, bombs);
         }
         
-        // 4. Applica il movimento se la direzione (nuova o vecchia) è valida
-        // Nota: usiamo una logica inversa qui per sicurezza
+        // Applica il movimento finale
         int checkCol = col;
         int checkRow = row;
         switch (currentDirection) {
@@ -96,6 +107,34 @@ public class Enemy {
         if (!isBlocked(checkCol, checkRow, map, dangerMap, bombs)) {
             applyMove(currentDirection);
         }
+    }
+    
+    // Calcola se il giocatore è nel raggio di "vista"
+    private boolean isPlayerInRadius(Player p) {
+        int dx = Math.abs(p.getCol() - this.col);
+        int dy = Math.abs(p.getRow() - this.row);
+        return dx <= CHASE_RADIUS && dy <= CHASE_RADIUS;
+    }
+
+    // Determina la direzione migliore per avvicinarsi al giocatore
+    private Direction getChaseDirection(GameMap map, boolean[][] dangerMap, List<Bomb> bombs, Player p) {
+        int pCol = p.getCol();
+        int pRow = p.getRow();
+        
+        List<Direction> possibleMoves = new ArrayList<>();
+        
+        // Aggiungi le direzioni che avvicinano al giocatore E non sono bloccate
+        if (pRow < this.row && !isBlocked(col, row - 1, map, dangerMap, bombs)) possibleMoves.add(Direction.UP);
+        if (pRow > this.row && !isBlocked(col, row + 1, map, dangerMap, bombs)) possibleMoves.add(Direction.DOWN);
+        if (pCol < this.col && !isBlocked(col - 1, row, map, dangerMap, bombs)) possibleMoves.add(Direction.LEFT);
+        if (pCol > this.col && !isBlocked(col + 1, row, map, dangerMap, bombs)) possibleMoves.add(Direction.RIGHT);
+        
+        if (!possibleMoves.isEmpty()) {
+            // Scegli a caso tra le direzioni che avvicinano (per non farlo sembrare troppo robotico)
+            return possibleMoves.get(rand.nextInt(possibleMoves.size()));
+        }
+        
+        return null; // Nessuna mossa diretta valida verso il giocatore
     }
     
     private boolean applyMove(Direction dir) {
@@ -113,6 +152,7 @@ public class Enemy {
     
     private boolean isBlocked(int c, int r, GameMap map, boolean[][] dangerMap, List<Bomb> bombs) {
         if (r < 0 || r >= dangerMap.length || c < 0 || c >= dangerMap[0].length) return true;
+        // Il nemico evita i muri, i mattoni, le zone di pericolo (esplosioni future) e le bombe stesse
         return map.isTileSolid(c, r) || dangerMap[r][c] || isBombAt(c, r, bombs);
     }
 
@@ -127,8 +167,9 @@ public class Enemy {
         if (!isBlocked(col, row + 1, map, dangerMap, bombs)) safeDirections.add(Direction.DOWN);
         if (!isBlocked(col - 1, row, map, dangerMap, bombs)) safeDirections.add(Direction.LEFT);
         if (!isBlocked(col + 1, row, map, dangerMap, bombs)) safeDirections.add(Direction.RIGHT);
+        
         if (!safeDirections.isEmpty()) { 
-            return safeDirections.get(new Random().nextInt(safeDirections.size())); 
+            return safeDirections.get(rand.nextInt(safeDirections.size())); 
         }
         return null; 
     }
@@ -137,7 +178,7 @@ public class Enemy {
         Direction safest = findSafestMove(map, dangerMap, bombs);
         if (safest != null) return safest; 
         
-        // Fallback: cerca celle non solide (anche se pericolose)
+        // Fallback: cerca celle non solide (anche se pericolose) se è in trappola
         List<Direction> validDirections = new ArrayList<>();
         if (!map.isTileSolid(col, row-1) && !isBombAt(col, row-1, bombs)) validDirections.add(Direction.UP);
         if (!map.isTileSolid(col, row+1) && !isBombAt(col, row+1, bombs)) validDirections.add(Direction.DOWN);
@@ -145,33 +186,19 @@ public class Enemy {
         if (!map.isTileSolid(col+1, row) && !isBombAt(col+1, row, bombs)) validDirections.add(Direction.RIGHT);
 
         if (!validDirections.isEmpty()) { 
-            return validDirections.get(new Random().nextInt(validDirections.size())); 
+            return validDirections.get(rand.nextInt(validDirections.size())); 
         }
         return currentDirection; 
     }
 
-    // --- CORREZIONE CRITICA ---
     private void moveToTarget() {
-        if (x < targetX) { 
-            x += MOVE_SPEED; 
-            if (x >= targetX) x = targetX; 
-        } else if (x > targetX) { 
-            x -= MOVE_SPEED; 
-            if (x <= targetX) x = targetX; 
-        }
+        if (x < targetX) { x += MOVE_SPEED; if (x >= targetX) x = targetX; }
+        else if (x > targetX) { x -= MOVE_SPEED; if (x <= targetX) x = targetX; }
 
-        if (y < targetY) { 
-            y += MOVE_SPEED; 
-            if (y >= targetY) y = targetY; 
-        } else if (y > targetY) { 
-            y -= MOVE_SPEED; 
-            if (y <= targetY) y = targetY; 
-        }
+        if (y < targetY) { y += MOVE_SPEED; if (y >= targetY) y = targetY; }
+        else if (y > targetY) { y -= MOVE_SPEED; if (y <= targetY) y = targetY; }
         
-        // Usa una tolleranza o confronto diretto sicuro
-        // Poiché sopra facciamo il "clamp" (if x >= targetX then x = targetX), 
-        // l'uguaglianza esatta ora dovrebbe funzionare, ma usiamo Math.abs per sicurezza
-        if (Math.abs(x - targetX) < 0.1 && Math.abs(y - targetY) < 0.1) {
+        if (Math.abs(x - targetX) < 1.0 && Math.abs(y - targetY) < 1.0) {
              x = targetX;
              y = targetY;
              state = State.IDLE; 

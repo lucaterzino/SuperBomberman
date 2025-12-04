@@ -69,6 +69,36 @@ public class GameRenderer {
 
         gc.restore();
     }
+    
+    // --- METODI DI DISEGNO OVERLAY ---
+    public void drawGameOverOverlay() {
+        drawOverlay("GAME OVER", Color.RED);
+    }
+    
+    public void drawPauseOverlay() {
+        drawOverlay("PAUSA", Color.LIGHTBLUE);
+    }
+
+    public void drawOverlay(String text, Color color) {
+        gc.setFill(Color.rgb(0, 0, 0, 0.7));
+        gc.fillRect(0, 0, canvasWidth, canvasHeight);
+        gc.setFill(color);
+        gc.setFont(Font.font("Arial", 50));
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.fillText(text, canvasWidth/2, canvasHeight/2);
+        gc.setFont(Font.font("Arial", 20));
+        
+        if (text.equals("PAUSA")) {
+            gc.setFill(Color.WHITE);
+            gc.fillText("Premi INVIO per riprendere", canvasWidth/2, canvasHeight/2 + 50);
+        } else {
+            gc.setFill(Color.WHITE);
+            gc.fillText("Premi ENTER per tornare al menu", canvasWidth/2, canvasHeight/2 + 50);
+        }
+        gc.setTextAlign(TextAlignment.LEFT);
+    }
+
+    // --- METODI DI DISEGNO PRIVATI ---
 
     private void drawMap(GameMap map) {
         for (int r = 0; r < map.getRows(); r++) {
@@ -349,9 +379,11 @@ public class GameRenderer {
         double centerY = HUD_HEIGHT / 2;
         double startX = 40;
 
+        // Testa Player
         drawMiniPlayerHead(startX, centerY - 15);
         startX += 45; 
 
+        // Cuore
         double heartSize = 1.5;
         double heartX = startX;
         double heartY = centerY - 20; 
@@ -359,35 +391,32 @@ public class GameRenderer {
         gc.save();
         gc.translate(heartX, heartY);
         gc.scale(heartSize, heartSize);
-        
         gc.setFill(Color.RED);
         gc.setStroke(Color.BLACK);
         gc.setLineWidth(1);
-        
-        String heartPath = "M 12,4 Q 4,4 4,10 Q 4,18 12,24 Q 20,18 20,10 Q 20,4 12,4 z";
         gc.beginPath();
-        gc.appendSVGPath(heartPath);
+        gc.appendSVGPath("M 12,4 Q 4,4 4,10 Q 4,18 12,24 Q 20,18 20,10 Q 20,4 12,4 z");
         gc.fill();
         gc.stroke();
-        
         gc.restore();
 
+        // Vite
         gc.setFill(Color.WHITE);
         gc.setStroke(Color.BLACK);
         gc.setLineWidth(1);
         gc.setTextAlign(TextAlignment.CENTER);
         gc.setFont(Font.font("Monospaced", FontWeight.BOLD, 24));
-        
         double textX = heartX + (24 * heartSize) / 2; 
         double textY = centerY + 8; 
-        
         gc.fillText(String.valueOf(lives), textX, textY); 
         gc.strokeText(String.valueOf(lives), textX, textY);
         gc.setTextAlign(TextAlignment.LEFT);
 
+        // Statistiche
         startX += 90; 
         double textBaselineY = centerY + 10; 
-
+        
+        // Icona Nemico (Teschio Rosso)
         gc.setFill(Color.RED);
         gc.fillRect(startX, centerY - 12, 24, 24); 
         gc.setFill(Color.WHITE); 
@@ -399,37 +428,28 @@ public class GameRenderer {
         gc.fillText(String.valueOf(enemiesKilled), startX + 35, textBaselineY);
 
         startX += 120;
-
+        
+        // Icona Punteggio (Moneta)
         gc.setFill(Color.GOLD);
         gc.fillOval(startX, centerY - 12, 24, 24);
         gc.setStroke(Color.WHITE);
         gc.strokeOval(startX + 5, centerY - 7, 14, 14);
         
-        String scoreStr = String.format("%02d", score);
         gc.setFill(Color.WHITE);
         gc.setStroke(Color.BLACK);
         gc.setLineWidth(1);
-        gc.fillText(scoreStr, startX + 35, textBaselineY);
-        gc.strokeText(scoreStr, startX + 35, textBaselineY);
+        gc.fillText(String.format("%02d", score), startX + 35, textBaselineY);
+        gc.strokeText(String.format("%02d", score), startX + 35, textBaselineY);
 
-        double timerWidth = 160;
-        double timerHeight = 40;
+        // Timer
         double timerX = canvasWidth - 220;
-        double timerY = centerY - timerHeight/2; 
-        
-        gc.setFill(Color.BLACK);
-        gc.fillRect(timerX, timerY, timerWidth, timerHeight);
-        gc.setStroke(Color.CYAN);
-        gc.setLineWidth(3);
-        gc.strokeRect(timerX, timerY, timerWidth, timerHeight);
-
         int minutes = (int) timeLeft / 60;
         int seconds = (int) timeLeft % 60;
         String timeString = String.format("%02d:%02d", minutes, seconds);
-        
         gc.setFill(timeLeft < 30 ? Color.RED : Color.WHITE);
         gc.fillText(timeString, timerX + 40, textBaselineY);
         
+        // PowerUps
         double iconX = startX + 150; 
         for (PowerUpType p : activePowerUps) {
             drawMiniPowerUp(p, iconX, centerY - 15);
@@ -437,6 +457,7 @@ public class GameRenderer {
         }
     }
     
+    // Helper HUD: Testa Mini
     private void drawMiniPlayerHead(double x, double y) {
         double size = 30;
         gc.setFill(Color.WHITE);
@@ -450,27 +471,6 @@ public class GameRenderer {
         gc.setFill(Color.MAGENTA);
         gc.fillRect(x + 10, y - 6, 10, 6);
         gc.strokeRect(x + 10, y - 6, 10, 6);
-    }
-
-    public void drawGameOverOverlay() {
-        drawOverlay("GAME OVER", Color.RED);
-    }
-    
-    public void drawPauseOverlay() {
-        drawOverlay("PAUSA", Color.LIGHTBLUE);
-    }
-
-    public void drawOverlay(String text, Color color) {
-        gc.setFill(Color.rgb(0, 0, 0, 0.7));
-        gc.fillRect(0, 0, canvasWidth, canvasHeight);
-        gc.setFill(color);
-        gc.setFont(Font.font("Arial", 50));
-        gc.setTextAlign(TextAlignment.CENTER);
-        gc.fillText(text, canvasWidth/2, canvasHeight/2);
-        gc.setFont(Font.font("Arial", 20));
-        gc.setFill(Color.WHITE);
-        gc.fillText("Premi ENTER", canvasWidth/2, canvasHeight/2 + 60);
-        gc.setTextAlign(TextAlignment.LEFT);
     }
     
     public void drawRespawnScreen(int lives) {

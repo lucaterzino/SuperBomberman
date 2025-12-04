@@ -1,17 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.canvas.Canvas?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ProgressBar?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
+
 <StackPane fx:id="rootPane" prefHeight="768.0" prefWidth="1024.0" style="-fx-background-color: #808080;" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="main.logic.SplashController">
    <children>
+      <!-- Canvas per disegnare sfondi e logo (Va dietro) -->
+      <Canvas fx:id="splashCanvas" height="768.0" width="1024.0" focusTraversable="true" />
+      
+      <!-- Interfaccia Utente (Va sopra) -->
       <VBox fx:id="loadingContainer" alignment="CENTER" spacing="30.0">
          <children>
-            <Button fx:id="playNowButton" mnemonicParsing="false" onAction="#handlePlayNow" style="-fx-background-color: #87CEEB; -fx-text-fill: white; -fx-cursor: hand; -fx-background-radius: 10;" text="PLAY NOW">
-               <font><Font name="Monospaced Bold" size="36.0" /></font>
-               <padding><Insets bottom="15.0" left="40.0" right="40.0" top="15.0" /></padding>
+            <Button fx:id="playNowButton" mnemonicParsing="false" onAction="#handlePlayNow" style="-fx-background-color: #87CEEB; -fx-text-fill: white; -fx-cursor: hand; -fx-background-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.6), 5, 0, 0, 2);" text="PLAY NOW">
+               <font>
+                  <Font name="Monospaced Bold" size="36.0" />
+               </font>
+               <padding>
+                  <Insets bottom="15.0" left="40.0" right="40.0" top="15.0" />
+               </padding>
             </Button>
             <ProgressBar fx:id="loadingBar" prefHeight="30.0" prefWidth="500.0" progress="0.0" style="-fx-accent: #87CEEB; -fx-control-inner-background: #555555;" visible="false" />
          </children>

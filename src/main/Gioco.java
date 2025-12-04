@@ -19,6 +19,7 @@ public class Gioco extends Application {
     private Scene gameScene;
     private GameController gameController; 
     private MenuController menuController;
+    private SplashController splashController; // Riferimento al controller splash
 
     @Override
     public void start(Stage stage) throws Exception {
@@ -36,9 +37,12 @@ public class Gioco extends Application {
     private void loadSplashScreen() throws IOException {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/main/view/splash.fxml"));
         Parent root = loader.load();
-        SplashController controller = loader.getController();
-        controller.setMainApp(this);
+        splashController = loader.getController(); // Ottieni il controller
+        splashController.setMainApp(this);
         splashScene = new Scene(root);
+        
+        // --- NUOVO: Collega gli eventi della tastiera al controller splash ---
+        splashScene.setOnKeyPressed(event -> splashController.handleKeyPressed(event));
     }
 
     private void loadMenuScene() throws IOException {
@@ -62,12 +66,14 @@ public class Gioco extends Application {
 
     public void showGameScreen() {
         if (menuController != null) menuController.stopLoop();
+        if (splashController != null) splashController.stopLoop(); // Ferma anche il loop splash
         primaryStage.setScene(gameScene);
         gameController.startGame(); 
     }
 
     public void showMenuScreen() {
         if (gameController != null) gameController.stopGame();
+        if (splashController != null) splashController.stopLoop(); // Ferma anche il loop splash
         primaryStage.setScene(menuScene);
         if (menuController != null) menuController.initialize(); 
     }
