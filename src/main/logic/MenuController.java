@@ -11,8 +11,7 @@ import main.view.MenuRenderer;
 public class MenuController {
 
     @FXML private Canvas menuCanvas;
-    
-    private MenuRenderer renderer; // VIEW
+    private MenuRenderer renderer;
     private Gioco mainApp;
     private AnimationTimer menuLoop;
 
@@ -28,10 +27,10 @@ public class MenuController {
 
     @FXML
     public void initialize() {
-        // Inizializza il renderer (View) passando il contesto grafico
+        // Inizializza View
         renderer = new MenuRenderer(menuCanvas.getGraphicsContext2D(), 1024, 768);
 
-        // Definisci il loop di animazione
+        // Definisci Loop
         menuLoop = new AnimationTimer() {
             @Override
             public void handle(long now) {
@@ -40,17 +39,21 @@ public class MenuController {
             }
         };
         
-        // Avvia subito il loop per la prima visualizzazione
+        // Avvia subito
         startLoop();
     }
     
-    // Metodo pubblico per riavviare il loop quando si torna al menu
+    // Metodo per avviare il loop (chiamato da Gioco.java quando si torna al menu)
     public void startLoop() {
         if (menuLoop != null) {
             menuLoop.start();
         }
-        // Forza un ridisegno immediato per evitare flash neri
-        draw();
+        // Forza il focus sul canvas per ricevere input tastiera
+        if (menuCanvas != null) {
+            menuCanvas.requestFocus();
+            // Disegna un frame immediatamente per evitare flash neri/blu
+            draw();
+        }
     }
 
     public void stopLoop() {
@@ -75,14 +78,14 @@ public class MenuController {
 
     private void selectOption() {
         if (selectedIndex == 0) { // NORMAL GAME
-            // stopLoop(); // RIMOSSO: Non fermiamo il loop grafico
+            stopLoop(); // Ferma l'animazione del menu mentre si gioca
             if (mainApp != null) {
                 mainApp.showGameScreen();
             }
         } else if (selectedIndex == 2) { // EXIT
             System.exit(0);
         } else {
-            // OPTION (Placeholder)
+            // OPTION
             System.out.println("Opzione non disponibile: " + options[selectedIndex]);
         }
     }
@@ -94,7 +97,6 @@ public class MenuController {
     }
 
     private void draw() {
-        // Delega tutto il disegno al Renderer
         if (renderer != null) {
             renderer.drawMenu(time, cloudX, options, selectedIndex);
         }

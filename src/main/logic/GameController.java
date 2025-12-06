@@ -132,6 +132,7 @@ public class GameController {
     }
 
     private void update(double deltaTime) {
+        // Se in pausa, non aggiorniamo la logica di gioco (movimento, bombe, ecc.)
         if (currentState == GameState.PAUSED) return;
 
         if (currentState == GameState.RESPAWNING) {
@@ -212,16 +213,16 @@ public class GameController {
         if (code == KeyCode.ESCAPE) {
             if (currentState == GameState.PLAYING) {
                 currentState = GameState.PAUSED;
-                pauseIndex = 0; // Reset selezione
+                pauseIndex = 0; // Reset selezione su "OPTIONS"
             } else if (currentState == GameState.PAUSED) {
-                currentState = GameState.PLAYING;
+                currentState = GameState.PLAYING; // Riprendi
             } else if (currentState == GameState.GAME_OVER || currentState == GameState.VICTORY) {
                 if (mainApp != null) mainApp.showMenuScreen();
             }
             return;
         }
 
-        // GESTIONE INPUT DURANTE LA PAUSA
+        // GESTIONE INPUT NEL MENU PAUSA
         if (currentState == GameState.PAUSED) {
             if (code == KeyCode.UP) {
                 pauseIndex--;
@@ -232,7 +233,7 @@ public class GameController {
             } else if (code == KeyCode.ENTER || code == KeyCode.Z || code == KeyCode.SPACE) {
                 executePauseOption();
             }
-            return; // Blocca altri input di gioco
+            return; // Blocca altri input di gioco mentre si è nel menu
         }
 
         if (currentState == GameState.GAME_OVER || currentState == GameState.VICTORY) {
