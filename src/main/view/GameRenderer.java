@@ -28,7 +28,7 @@ public class GameRenderer {
         this.canvasWidth = width;
         this.canvasHeight = height;
         
-        // Mappe Colori
+        // Mappe Colori Base (per fallback)
         this.tileColors = new HashMap<>();
         tileColors.put(TileType.EMPTY, Color.web("#2E8B57")); 
         tileColors.put(TileType.WALL, Color.web("#555555"));  
@@ -57,11 +57,14 @@ public class GameRenderer {
         gc.save();
         gc.translate(mapOffsetX, mapOffsetY);
 
+        // 1. Mappa (Pixel Art)
         drawMap(map);
         
+        // 2. Oggetti (Pixel Art)
         for (PowerUp p : powerUps) drawPowerUp(p);
         for (Objective o : objectives) drawObjective(o);
         
+        // 3. Entità (Pixel Art)
         for (Bomb b : bombs) drawBomb(b);
         for (Enemy e : enemies) drawEnemy(e);
         for (Explosion e : explosions) drawExplosion(e);
@@ -71,60 +74,280 @@ public class GameRenderer {
         gc.restore();
     }
     
-    // --- DISEGNO MENU DI PAUSA PIXEL ART ---
-    public void drawPauseMenu(String[] options, int selectedIndex) {
-        // 1. Sfondo semi-trasparente per oscurare il gioco
-        gc.setFill(Color.rgb(0, 0, 0, 0.6));
-        gc.fillRect(0, 0, canvasWidth, canvasHeight);
-        
-        // 2. Riquadro Menu (Stile Arcade)
-        double menuW = 400;
-        double menuH = 300;
-        double x = (canvasWidth - menuW) / 2;
-        double y = (canvasHeight - menuH) / 2;
-        
-        // Sfondo blu scuro
-        gc.setFill(Color.web("#00008B"));
-        gc.fillRect(x, y, menuW, menuH);
-        
-        // Bordo Arancione spesso
-        gc.setStroke(Color.ORANGE);
-        gc.setLineWidth(6);
-        gc.strokeRect(x, y, menuW, menuH);
-        
-        // Bordo interno Bianco sottile
-        gc.setStroke(Color.WHITE);
-        gc.setLineWidth(2);
-        gc.strokeRect(x + 10, y + 10, menuW - 20, menuH - 20);
+    // --- DISEGNO MAPPA (PIXEL ART) ---
+    private void drawMap(GameMap map) {
+        for (int r = 0; r < map.getRows(); r++) {
+            for (int c = 0; c < map.getColumns(); c++) {
+                TileType type = map.getTile(c, r);
+                double x = c * TILE_SIZE;
+                double y = r * TILE_SIZE;
 
-        // 3. Titolo PAUSE
-        gc.setFill(Color.YELLOW);
-        gc.setFont(Font.font("Monospaced", FontWeight.BOLD, 50));
-        gc.setTextAlign(TextAlignment.CENTER);
-        gc.fillText("PAUSE", canvasWidth / 2, y + 80);
-        
-        // 4. Opzioni
-        gc.setFont(Font.font("Monospaced", FontWeight.BOLD, 30));
-        
-        for (int i = 0; i < options.length; i++) {
-            double textY = y + 160 + (i * 60);
-            
-            if (i == selectedIndex) {
-                gc.setFill(Color.WHITE);
-                // Cursore a sinistra ">"
-                gc.fillText(">", canvasWidth / 2 - 100, textY);
-            } else {
-                gc.setFill(Color.GRAY);
+                // Sfondo Erba
+                gc.setFill(Color.web("#2E8B57")); 
+                gc.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+                // Dettagli erba
+                gc.setFill(Color.web("#3CB371")); 
+                gc.fillRect(x + 5, y + 5, 4, 4);
+                gc.fillRect(x + 40, y + 15, 4, 4);
+                gc.fillRect(x + 20, y + 40, 4, 4);
+                gc.fillRect(x + 50, y + 50, 4, 4);
+
+                if (type == TileType.WALL) {
+                    drawWallBlock(x, y);
+                } else if (type == TileType.BRICK) {
+                    drawBrickBlock(x, y);
+                }
             }
-            
-            gc.fillText(options[i], canvasWidth / 2, textY);
         }
-        
-        gc.setTextAlign(TextAlignment.LEFT);
     }
     
-    // --- RESTO DEI METODI DI DISEGNO ---
+    private void drawWallBlock(double x, double y) {
+        // Blocco di pietra solida
+        gc.setFill(Color.web("#555555")); gc.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+        // Luci
+        gc.setFill(Color.web("#777777")); gc.fillRect(x, y, TILE_SIZE, 4); gc.fillRect(x, y, 4, TILE_SIZE);
+        // Ombre
+        gc.setFill(Color.web("#333333")); gc.fillRect(x, y+TILE_SIZE-4, TILE_SIZE, 4); gc.fillRect(x+TILE_SIZE-4, y, 4, TILE_SIZE);
+        // Dettaglio interno
+        gc.setFill(Color.web("#444444")); gc.fillRect(x+10, y+10, TILE_SIZE-20, TILE_SIZE-20);
+    }
+    
+    private void drawBrickBlock(double x, double y) {
+        // Muro di mattoni distruttibile
+        gc.setFill(Color.web("#D2691E")); gc.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+        gc.setStroke(Color.BLACK); gc.setLineWidth(2);
+        // Pattern mattoni
+        gc.strokeLine(x, y+15, x+TILE_SIZE, y+15);
+        gc.strokeLine(x, y+30, x+TILE_SIZE, y+30);
+        gc.strokeLine(x, y+45, x+TILE_SIZE, y+45);
+        gc.strokeLine(x+30, y, x+30, y+15);
+        gc.strokeLine(x+15, y+15, x+15, y+30);
+        gc.strokeLine(x+45, y+15, x+45, y+30);
+        gc.strokeLine(x+30, y+30, x+30, y+45);
+        gc.strokeLine(x+15, y+45, x+15, y+60);
+        gc.strokeLine(x+45, y+45, x+45, y+60);
+        // Ombra
+        gc.setFill(Color.rgb(0,0,0,0.2)); gc.fillRect(x+TILE_SIZE-4, y, 4, TILE_SIZE); gc.fillRect(x, y+TILE_SIZE-4, TILE_SIZE, 4);
+    }
 
+    // --- DISEGNO ENTITÀ (PIXEL ART) ---
+
+    private void drawPlayer(Player p) {
+        if (p.isImmune() && (p.getImmunityFrames() / 4) % 2 == 0) return;
+        
+        double x = p.getX();
+        double y = p.getY();
+        double s = Player.SIZE; // 48x48
+        
+        // Ombra
+        gc.setFill(Color.rgb(0, 0, 0, 0.4));
+        gc.fillOval(x + 10, y + s - 8, s - 20, 8);
+
+        // Corpo Blu
+        gc.setFill(Color.BLUE);
+        gc.fillRect(x + 16, y + 26, 16, 14);
+        
+        // Cintura Nera/Oro
+        gc.setFill(Color.BLACK); gc.fillRect(x + 16, y + 36, 16, 4);
+        gc.setFill(Color.GOLD); gc.fillRect(x + 22, y + 36, 4, 4);
+
+        // Testa Bianca (Casco)
+        gc.setFill(Color.WHITE);
+        gc.fillRect(x + 12, y + 4, 24, 24); 
+        gc.setStroke(Color.BLACK); gc.setLineWidth(2);
+        gc.strokeRect(x + 12, y + 4, 24, 24);
+
+        // Faccia Rosa
+        gc.setFill(Color.PEACHPUFF);
+        gc.fillRect(x + 16, y + 14, 16, 10);
+
+        // Occhi Neri (Linee verticali)
+        gc.setFill(Color.BLACK);
+        gc.fillRect(x + 20, y + 16, 2, 6); 
+        gc.fillRect(x + 26, y + 16, 2, 6); 
+
+        // Mani e Piedi Magenta
+        gc.setFill(Color.MAGENTA);
+        gc.fillOval(x + 6, y + 26, 10, 10); // Mano SX
+        gc.fillOval(x + 32, y + 26, 10, 10); // Mano DX
+        gc.fillOval(x + 12, y + 38, 12, 10); // Piede SX
+        gc.fillOval(x + 24, y + 38, 12, 10); // Piede DX
+        
+        // Antenna
+        gc.fillRect(x + 22, y - 2, 4, 6);
+    }
+
+    private void drawEnemy(Enemy e) {
+        double x = e.getX();
+        double y = e.getY();
+        double s = Enemy.SIZE;
+        double cx = x + s/2;
+        double cy = y + s/2;
+
+        // Corpo Arancione "Balloom" (Rotondo pixelato)
+        gc.setFill(Color.ORANGERED);
+        gc.fillRect(x + 10, y + 4, s - 20, s - 8); // Verticale
+        gc.fillRect(x + 4, y + 10, s - 8, s - 20); // Orizzontale
+        
+        // Highlight Arancione Chiaro
+        gc.setFill(Color.ORANGE);
+        gc.fillRect(x + 10, y + 10, 10, 10);
+        
+        // Occhi Neri
+        gc.setFill(Color.BLACK);
+        gc.fillRect(cx - 10, cy - 4, 4, 8); 
+        gc.fillRect(cx + 6, cy - 4, 4, 8);  
+        
+        // Riflesso Occhi
+        gc.setFill(Color.WHITE);
+        gc.fillRect(cx - 10, cy - 4, 2, 2); 
+        gc.fillRect(cx + 6, cy - 4, 2, 2);
+        
+        // Bocca (linea zig-zag o dritta)
+        gc.setStroke(Color.DARKRED);
+        gc.setLineWidth(2);
+        gc.strokeLine(cx - 6, cy + 10, cx + 6, cy + 10);
+    }
+
+    private void drawBomb(Bomb b) {
+        double x = b.getCol() * TILE_SIZE; 
+        double y = b.getRow() * TILE_SIZE;
+        double r = b.getCurrentRadius(); // Animato
+        double offset = (TILE_SIZE - r) / 2;
+
+        // Corpo Bomba
+        gc.setFill(b.isRemote() ? Color.DARKRED : Color.BLACK);
+        gc.fillOval(x + offset, y + offset, r, r);
+        
+        // Riflesso
+        gc.setFill(Color.WHITE);
+        gc.fillOval(x + offset + r*0.25, y + offset + r*0.25, r*0.2, r*0.2);
+
+        // Tappo Oro
+        gc.setFill(Color.GOLD);
+        gc.fillRect(x + TILE_SIZE/2.0 - 6, y + offset - 4, 12, 6);
+        
+        // Miccia
+        gc.setStroke(Color.WHITE);
+        gc.setLineWidth(3);
+        double mx = x + TILE_SIZE/2.0; 
+        double my = y + offset - 4;
+        
+        if (b.getTimerFrames() % 20 < 10) {
+            gc.strokeLine(mx, my, mx, my - 8);
+        } else {
+            gc.strokeLine(mx, my, mx + 4, my - 8);
+        }
+        
+        // Scintilla
+        if (!b.isRemote()) {
+            gc.setFill((b.getTimerFrames() / 5) % 2 == 0 ? Color.RED : Color.YELLOW);
+            gc.fillOval(mx - 3, my - 12, 6, 6);
+        }
+    }
+    
+    private void drawExplosion(Explosion e) {
+        double x = e.getCol() * TILE_SIZE; 
+        double y = e.getRow() * TILE_SIZE;
+        double s = TILE_SIZE;
+        double life = (double) e.getTimer() / 30.0;
+        
+        Color fireColor;
+        if (life > 0.7) fireColor = Color.WHITE;
+        else if (life > 0.4) fireColor = Color.YELLOW;
+        else fireColor = Color.ORANGERED;
+
+        gc.setFill(fireColor);
+        
+        // Disegno a forma di esplosione irregolare
+        double pulse = (e.getTimer() % 6) < 3 ? 4 : 0;
+        gc.fillRect(x + 10 + pulse, y + 10 + pulse, s - 20 - pulse*2, s - 20 - pulse*2);
+        
+        gc.fillRect(x + 5, y + 20, 5, s - 40); // Punta Sx
+        gc.fillRect(x + s - 10, y + 20, 5, s - 40); // Punta Dx
+        gc.fillRect(x + 20, y + 5, s - 40, 5); // Punta Su
+        gc.fillRect(x + 20, y + s - 10, s - 40, 5); // Punta Giù
+        
+        gc.setFill(Color.rgb(255, 255, 255, 0.5));
+        gc.fillRect(x + 20, y + 20, s - 40, s - 40);
+    }
+
+    private void drawPowerUp(PowerUp p) {
+        double x = p.getCol() * TILE_SIZE + (TILE_SIZE - PowerUp.SIZE) / 2.0;
+        double y = p.getRow() * TILE_SIZE + (TILE_SIZE - PowerUp.SIZE) / 2.0;
+        double s = PowerUp.SIZE;
+        double cx = x + s/2;
+        double cy = y + s/2;
+
+        // Pannello PowerUp
+        gc.setFill(powerUpColors.get(p.getType()));
+        gc.fillRect(x, y, s, s);
+        gc.setStroke(Color.WHITE);
+        gc.setLineWidth(3);
+        gc.strokeRect(x, y, s, s);
+        
+        // Icone Specifiche
+        switch(p.getType()) {
+            case BOMB_UP: 
+                // Icona Bomba
+                gc.setFill(Color.BLACK); gc.fillOval(cx - 8, cy - 6, 16, 16);
+                break;
+            case FIRE_UP: 
+                // Icona Fiamma
+                gc.setFill(Color.YELLOW); 
+                gc.fillOval(cx - 6, cy - 4, 12, 12);
+                gc.setFill(Color.RED); 
+                gc.fillOval(cx - 3, cy - 1, 6, 6);
+                break;
+            case SPEED_UP: 
+                // Icona Pattino
+                gc.setFill(Color.RED); 
+                gc.fillOval(cx - 10, cy, 20, 8); 
+                gc.fillRect(cx - 6, cy - 8, 12, 8); 
+                gc.setFill(Color.WHITE); 
+                gc.fillOval(cx - 8, cy + 6, 4, 4); 
+                gc.fillOval(cx + 4, cy + 6, 4, 4);
+                break;
+            case REMOTE: 
+                // Icona Telecomando
+                gc.setFill(Color.DARKGRAY); gc.fillRect(cx - 6, cy - 8, 12, 16);
+                gc.setFill(Color.RED); gc.fillOval(cx - 2, cy - 4, 4, 4);
+                break;
+            default:
+                gc.setFill(Color.WHITE); gc.fillRect(cx - 5, cy - 5, 10, 10);
+                break;
+        }
+    }
+    
+    private void drawObjective(Objective o) {
+        if (o.isCollected()) return;
+        double cx = o.getCol() * TILE_SIZE + TILE_SIZE / 2.0;
+        double cy = o.getRow() * TILE_SIZE + TILE_SIZE / 2.0;
+        double s = Objective.SIZE * o.getScale();
+        
+        // Perla Ciano
+        gc.setFill(Color.BLACK.deriveColor(0, 0, 0, 0.4)); 
+        gc.fillOval(cx - s/2 + 4, cy - s/2 + 4, s, s); // Ombra
+        
+        gc.setFill(Color.CYAN); 
+        gc.fillOval(cx - s/2, cy - s/2, s, s);
+        
+        gc.setStroke(Color.GOLD); 
+        gc.setLineWidth(3); 
+        gc.strokeOval(cx - s/2, cy - s/2, s, s);
+
+        gc.setFill(Color.WHITE); 
+        gc.fillOval(cx - s/2 + s * 0.2, cy - s/2 + s * 0.2, s * 0.25, s * 0.25);
+    }
+    
+    private void drawDecorativeBackground(double mapX, double mapY, int cols, int rows) {
+        gc.setFill(Color.web("#204020")); // Sfondo scuro attorno alla mappa
+        gc.fillRect(0, HUD_HEIGHT, canvasWidth, canvasHeight - HUD_HEIGHT);
+        gc.setFill(Color.rgb(0,0,0,0.5)); // Ombra sotto la mappa
+        gc.fillRect(mapX + 10, mapY + 10, cols * TILE_SIZE, rows * TILE_SIZE);
+    }
+
+    // --- DISEGNO HUD ---
     public void drawHUD(int lives, int score, int enemiesKilled, double timeLeft, List<PowerUpType> activePowerUps) {
         gc.setFill(Color.web("#008000")); 
         gc.fillRect(0, 0, canvasWidth, HUD_HEIGHT);
@@ -138,9 +361,11 @@ public class GameRenderer {
 
         double centerY = HUD_HEIGHT / 2; double startX = 40;
 
+        // 1. Testa Player
         drawMiniPlayerHead(startX, centerY - 15); 
         startX += 45; 
 
+        // 2. Cuore con Vite
         double heartSize = 1.5; double heartX = startX; double heartY = centerY - 20; 
         gc.save(); gc.translate(heartX, heartY); gc.scale(heartSize, heartSize);
         gc.setFill(Color.RED); gc.setStroke(Color.BLACK); gc.setLineWidth(1);
@@ -153,49 +378,63 @@ public class GameRenderer {
         gc.strokeText(String.valueOf(lives), heartX + 22, centerY + 8);
         gc.setTextAlign(TextAlignment.LEFT);
 
+        // 3. Nemici Uccisi
         startX += 90; double textBaselineY = centerY + 10; 
         drawSkullIcon(startX, centerY - 12);
         gc.setFont(Font.font("Monospaced", FontWeight.BOLD, 28)); gc.setFill(Color.WHITE);
         gc.fillText(String.valueOf(enemiesKilled), startX + 35, textBaselineY);
 
+        // 4. Punteggio
         startX += 120;
         drawCoinIcon(startX, centerY - 12);
         gc.setFill(Color.WHITE); gc.setStroke(Color.BLACK); gc.setLineWidth(1);
         gc.fillText(String.format("%02d", score), startX + 35, textBaselineY);
         gc.strokeText(String.format("%02d", score), startX + 35, textBaselineY);
 
+        // 5. Timer
         double timerX = canvasWidth - 220;
+        gc.setFill(Color.BLACK); gc.fillRect(timerX, centerY - 20, 160, 40);
+        gc.setStroke(Color.CYAN); gc.setLineWidth(3); gc.strokeRect(timerX, centerY - 20, 160, 40);
         drawClockIcon(timerX - 35, centerY - 15);
+
         int minutes = (int) timeLeft / 60; int seconds = (int) timeLeft % 60;
         gc.setFill(timeLeft < 30 ? Color.RED : Color.WHITE);
         gc.fillText(String.format("%02d:%02d", minutes, seconds), timerX + 40, textBaselineY);
         
+        // 6. PowerUps
         double iconX = startX + 150; 
         for (PowerUpType p : activePowerUps) { drawMiniPowerUp(p, iconX, centerY - 15); iconX += 80; }
     }
+    
+    // --- HELPER METODI PER ICONE HUD ---
 
     private void drawMiniPlayerHead(double x, double y) {
         double size = 30;
         gc.setFill(Color.WHITE); gc.fillRect(x, y, size, size - 4); 
         gc.setStroke(Color.BLACK); gc.setLineWidth(2); gc.strokeRect(x, y, size, size - 4);
         gc.setFill(Color.BLACK); gc.fillRect(x + 8, y + 8, 4, 8); gc.fillRect(x + 18, y + 8, 4, 8);
-        gc.setFill(Color.MAGENTA); gc.fillRect(x + 10, y - 6, 10, 6); gc.strokeRect(x + 10, y - 6, 10, 6);
+        gc.setFill(Color.MAGENTA); gc.fillRect(x + 10, y - 6, 10, 6);
+        gc.strokeRect(x + 10, y - 6, 10, 6);
     }
+    
     private void drawSkullIcon(double x, double y) {
         gc.setFill(Color.RED); gc.fillRect(x, y, 24, 24);
         gc.setFill(Color.WHITE); gc.fillRect(x+4, y+4, 6, 6); gc.fillRect(x+14, y+4, 6, 6);
         gc.setFill(Color.BLACK); gc.fillRect(x+8, y+16, 2, 4); gc.fillRect(x+14, y+16, 2, 4);
     }
+    
     private void drawCoinIcon(double x, double y) {
         gc.setFill(Color.GOLD); gc.fillOval(x, y, 24, 24);
         gc.setStroke(Color.WHITE); gc.setLineWidth(2); gc.strokeOval(x+5, y+5, 14, 14);
     }
+    
     private void drawClockIcon(double x, double y) {
         double size = 30;
         gc.setFill(Color.WHITE); gc.fillOval(x, y, size, size);
         gc.setStroke(Color.BLACK); gc.setLineWidth(2); gc.strokeOval(x, y, size, size);
         gc.setStroke(Color.RED); gc.strokeLine(x+15, y+15, x+15, y+5); gc.strokeLine(x+15, y+15, x+25, y+15);
     }
+    
     private void drawMiniPowerUp(PowerUpType type, double x, double y) {
         double size = 30;
         gc.setFill(powerUpColors.get(type)); gc.fillRect(x, y, size, size);
@@ -203,65 +442,41 @@ public class GameRenderer {
         gc.setFill(Color.WHITE); gc.fillRect(x + 8, y + 8, size - 16, size - 16);
     }
 
-    private void drawMap(GameMap map) {
-        for (int r = 0; r < map.getRows(); r++) {
-            for (int c = 0; c < map.getColumns(); c++) {
-                TileType type = map.getTile(c, r);
-                double x = c * TILE_SIZE; double y = r * TILE_SIZE;
-                gc.setFill(tileColors.get(TileType.EMPTY)); gc.fillRect(x, y, TILE_SIZE, TILE_SIZE);
-                gc.setFill(Color.web("#3CB371")); gc.fillRect(x+5, y+5, 4, 4); gc.fillRect(x+40, y+15, 4, 4);
-                if (type == TileType.WALL) {
-                    gc.setFill(tileColors.get(type)); gc.fillRect(x, y, TILE_SIZE, TILE_SIZE);
-                    gc.setFill(Color.web("#AAAAAA")); gc.fillRect(x, y, TILE_SIZE, 4);
-                } else if (type == TileType.BRICK) {
-                    gc.setFill(tileColors.get(type)); gc.fillRect(x, y, TILE_SIZE, TILE_SIZE);
-                    gc.setStroke(Color.BLACK); gc.setLineWidth(2);
-                    gc.strokeLine(x, y+15, x+TILE_SIZE, y+15); gc.strokeLine(x, y+30, x+TILE_SIZE, y+30);
-                }
+    // --- DISEGNO DEL MENU DI PAUSA PIXEL ART ---
+    public void drawPauseMenu(String[] options, int selectedIndex) {
+        gc.setFill(Color.rgb(0, 0, 0, 0.6));
+        gc.fillRect(0, 0, canvasWidth, canvasHeight);
+        
+        double menuW = 400; double menuH = 300;
+        double x = (canvasWidth - menuW) / 2; double y = (canvasHeight - menuH) / 2;
+        
+        gc.setFill(Color.web("#00008B")); gc.fillRect(x, y, menuW, menuH);
+        gc.setStroke(Color.ORANGE); gc.setLineWidth(6); gc.strokeRect(x, y, menuW, menuH);
+        gc.setStroke(Color.WHITE); gc.setLineWidth(2); gc.strokeRect(x + 10, y + 10, menuW - 20, menuH - 20);
+
+        gc.setFill(Color.YELLOW);
+        gc.setFont(Font.font("Monospaced", FontWeight.BOLD, 50));
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.fillText("PAUSE", canvasWidth / 2, y + 80);
+        
+        gc.setFont(Font.font("Monospaced", FontWeight.BOLD, 30));
+        for (int i = 0; i < options.length; i++) {
+            double textY = y + 160 + (i * 60);
+            if (i == selectedIndex) {
+                gc.setFill(Color.WHITE);
+                gc.fillText(">", canvasWidth / 2 - 100, textY);
+            } else {
+                gc.setFill(Color.GRAY);
             }
+            gc.fillText(options[i], canvasWidth / 2, textY);
         }
+        gc.setTextAlign(TextAlignment.LEFT);
     }
-    private void drawPlayer(Player p) {
-        if (p.isImmune() && (p.getImmunityFrames() / 4) % 2 == 0) return;
-        double x = p.getX(); double y = p.getY(); double size = Player.SIZE; double cx = x + size / 2;
-        gc.setFill(Color.rgb(0, 0, 0, 0.4)); gc.fillOval(x + 8, y + size - 8, size - 16, 8);
-        gc.setFill(Color.BLUE); gc.fillRect(x + 14, y + 24, 20, 14);
-        gc.setFill(Color.WHITE); gc.fillRect(x + 10, y + 4, 28, 26); 
-        gc.setFill(Color.MAGENTA); gc.fillRect(x + 10, y - 6, 10, 6);
-    }
-    private void drawEnemy(Enemy e) {
-        double x = e.getX(); double y = e.getY(); double size = Enemy.SIZE;
-        gc.setFill(Color.ORANGERED); gc.fillRect(x + 8, y + 8, size - 16, size - 16);
-        gc.setFill(Color.WHITE); gc.fillRect(x + 10, y + 10, 4, 4); 
-    }
-    private void drawBomb(Bomb b) {
-        double x = b.getCol() * TILE_SIZE; double y = b.getRow() * TILE_SIZE;
-        double r = b.getCurrentRadius(); double offset = (TILE_SIZE - r) / 2;
-        gc.setFill(b.isRemote() ? Color.DARKRED : Color.web("#111111")); gc.fillOval(x + offset, y + offset, r, r);
-    }
-    private void drawExplosion(Explosion e) {
-        double x = e.getCol() * TILE_SIZE; double y = e.getRow() * TILE_SIZE;
-        double life = (double) e.getTimer() / 30.0;
-        gc.setFill(life > 0.7 ? Color.WHITE : (life > 0.4 ? Color.YELLOW : Color.ORANGERED));
-        gc.fillRect(x + 10, y + 10, TILE_SIZE - 20, TILE_SIZE - 20);
-    }
-    private void drawPowerUp(PowerUp p) {
-        double x = p.getCol() * TILE_SIZE + (TILE_SIZE - PowerUp.SIZE) / 2.0;
-        double y = p.getRow() * TILE_SIZE + (TILE_SIZE - PowerUp.SIZE) / 2.0;
-        double s = PowerUp.SIZE; 
-        gc.setFill(powerUpColors.get(p.getType())); gc.fillRect(x, y, s, s);
-    }
-    private void drawObjective(Objective o) {
-        if (o.isCollected()) return;
-        double cx = o.getCol() * TILE_SIZE + TILE_SIZE / 2.0; double cy = o.getRow() * TILE_SIZE + TILE_SIZE / 2.0;
-        double s = Objective.SIZE * o.getScale();
-        gc.setFill(Color.web("#00CED1")); gc.fillOval(cx - s/2, cy - s/2, s, s);
-    }
-    private void drawDecorativeBackground(double mapX, double mapY, int cols, int rows) {
-        gc.setFill(Color.web("#204020")); gc.fillRect(0, HUD_HEIGHT, canvasWidth, canvasHeight - HUD_HEIGHT);
-        gc.setFill(Color.rgb(0,0,0,0.5)); gc.fillRect(mapX + 10, mapY + 10, cols * TILE_SIZE, rows * TILE_SIZE);
-    }
+    
+    // --- OVERLAYS ---
+
     public void drawGameOverOverlay() { drawOverlay("GAME OVER", Color.RED); }
+    public void drawPauseOverlay() { drawOverlay("PAUSA", Color.LIGHTBLUE); }
 
     public void drawOverlay(String text, Color color) {
         gc.setFill(Color.rgb(0, 0, 0, 0.7)); gc.fillRect(0, 0, canvasWidth, canvasHeight);
