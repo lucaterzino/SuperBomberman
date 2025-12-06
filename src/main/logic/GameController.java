@@ -37,8 +37,7 @@ public class GameController {
     
     private boolean bombKeyPressed = false; 
     private boolean remoteKeyPressed = false; 
-    private boolean pauseKeyPressed = false; // Ora utilizzato correttamente
-
+    
     // --- MENU PAUSA ---
     private String[] pauseOptions = {"OPTIONS", "EXIT"};
     private int pauseIndex = 0;
@@ -51,13 +50,11 @@ public class GameController {
     private long lastFrameTime = 0; 
     
     private static final int MAX_PLAYER_POWERUPS = 2;
-    
     private static final int MAP_COLUMNS = 13;
     private static final int MAP_ROWS = 11;
     private static final double WINDOW_WIDTH = 1024;
     private static final double WINDOW_HEIGHT = 768;
     private static final double HUD_HEIGHT = 80;
-    
     private static final double MAP_OFFSET_X = (WINDOW_WIDTH - (MAP_COLUMNS * GameMap.TILE_SIZE)) / 2;
     private static final double MAP_OFFSET_Y = HUD_HEIGHT + ((WINDOW_HEIGHT - HUD_HEIGHT - (MAP_ROWS * GameMap.TILE_SIZE)) / 2);
 
@@ -66,25 +63,19 @@ public class GameController {
     private int enemiesKilled = 0;
     private double timeLeft = 240.0; 
 
-    private static class Coord {
-        int x, y;
-        Coord(int x, int y) { this.x = x; this.y = y; }
-    }
+    private static class Coord { int x, y; Coord(int x, int y) { this.x = x; this.y = y; } }
 
     public void initialize() {
         renderer = new GameRenderer(gameCanvas.getGraphicsContext2D(), WINDOW_WIDTH, WINDOW_HEIGHT);
         gameMap = new GameMap(MAP_COLUMNS, MAP_ROWS);
         this.dangerMap = new boolean[MAP_ROWS][MAP_COLUMNS];
-
         double playerOffset = (GameMap.TILE_SIZE - Player.SIZE) / 2.0;
         player = new Player(1, 1, playerOffset); 
-
         this.enemyOffset = (GameMap.TILE_SIZE - Enemy.SIZE) / 2.0;
         spawnEnemies(MAP_COLUMNS, MAP_ROWS);
         spawnObjectives(MAP_COLUMNS, MAP_ROWS);
 
         lastFrameTime = System.nanoTime();
-        
         gameLoop = new AnimationTimer() {
             @Override
             public void handle(long now) {
@@ -100,175 +91,106 @@ public class GameController {
         gameCanvas.setFocusTraversable(true);
     }
     
-    public void setMainApp(Gioco mainApp) { 
-        this.mainApp = mainApp; 
-    }
+    public void setMainApp(Gioco mainApp) { this.mainApp = mainApp; }
     
     private void draw() {
         renderer.clear();
-        
-        if (currentState == GameState.RESPAWNING) {
-            renderer.drawRespawnScreen(lives);
-            return;
-        }
-        
-        if (currentState == GameState.VICTORY) {
-            renderer.drawVictoryScreen(score, stateTimer);
-            return;
-        }
-
+        if (currentState == GameState.RESPAWNING) { renderer.drawRespawnScreen(lives); return; }
+        if (currentState == GameState.VICTORY) { renderer.drawVictoryScreen(score, stateTimer); return; }
         renderer.drawHUD(lives, score, enemiesKilled, timeLeft, player.getActivePowerUps());
-        renderer.drawGameScene(
-            gameMap, player, enemies, bombs, explosions, powerUps, objectives, 
-            MAP_OFFSET_X, MAP_OFFSET_Y
-        );
-
-        if (currentState == GameState.GAME_OVER) {
-            renderer.drawGameOverOverlay();
-        } else if (currentState == GameState.PAUSED) {
-            renderer.drawPauseMenu(pauseOptions, pauseIndex);
-        }
+        renderer.drawGameScene(gameMap, player, enemies, bombs, explosions, powerUps, objectives, MAP_OFFSET_X, MAP_OFFSET_Y);
+        if (currentState == GameState.GAME_OVER) renderer.drawGameOverOverlay();
+        else if (currentState == GameState.PAUSED) renderer.drawPauseMenu(pauseOptions, pauseIndex);
     }
 
     private void update(double deltaTime) {
         if (currentState == GameState.PAUSED) return;
-
         if (currentState == GameState.RESPAWNING) {
             stateTimer -= deltaTime;
-            if (stateTimer <= 0) {
-                finishRespawn();
-            }
+            if (stateTimer <= 0) finishRespawn();
             return; 
         }
-        
         if (currentState == GameState.VICTORY) {
             stateTimer -= deltaTime;
-            if (stateTimer <= 0) {
-                if (mainApp != null) mainApp.showMenuScreen();
-            }
+            if (stateTimer <= 0) { if (mainApp != null) mainApp.showMenuScreen(); }
             return;
         }
-        
         if (currentState == GameState.GAME_OVER) return; 
 
         timeLeft -= deltaTime;
-        if (timeLeft <= 0) {
-            timeLeft = 0;
-            handleDeath(); 
-        }
-
-        updateDangerMap();
-        updateExplosions(); 
-        player.update();
-        updateBombs(); 
-        
+        if (timeLeft <= 0) { timeLeft = 0; handleDeath(); }
+        updateDangerMap(); updateExplosions(); player.update(); updateBombs(); 
         for (Objective obj : objectives) obj.update();
-        checkPowerUpCollection(); 
-        checkObjectiveCollection(); 
-
+        checkPowerUpCollection(); checkObjectiveCollection(); 
         Iterator<Enemy> enemyIterator = enemies.iterator();
         while (enemyIterator.hasNext()) {
             Enemy enemy = enemyIterator.next();
             enemy.update(gameMap, dangerMap, bombs, player); 
         }
-        
         checkPlayerCollisions();
     }
 
     public void onKeyPressed(KeyCode code) {
-        // GESTIONE PAUSA (ESC) - Con controllo pressione ripetuta
         if (code == KeyCode.ESCAPE) {
-            if (!pauseKeyPressed) {
-                pauseKeyPressed = true;
-                if (currentState == GameState.PLAYING) {
-                    togglePause();
-                } else if (currentState == GameState.PAUSED) {
-                    togglePause();
-                } else if (currentState == GameState.GAME_OVER || currentState == GameState.VICTORY) {
-                    if (mainApp != null) mainApp.showMenuScreen();
-                }
-            }
+            if (currentState == GameState.PLAYING) { currentState = GameState.PAUSED; pauseIndex = 0; }
+            else if (currentState == GameState.PAUSED) currentState = GameState.PLAYING;
+            else if (currentState == GameState.GAME_OVER || currentState == GameState.VICTORY) { if (mainApp != null) mainApp.showMenuScreen(); }
             return;
         }
-
-        // GESTIONE INPUT DURANTE LA PAUSA
         if (currentState == GameState.PAUSED) {
-            if (code == KeyCode.UP) {
-                pauseIndex--;
-                if (pauseIndex < 0) pauseIndex = pauseOptions.length - 1;
-            } else if (code == KeyCode.DOWN) {
-                pauseIndex++;
-                if (pauseIndex >= pauseOptions.length) pauseIndex = 0;
-            } else if (code == KeyCode.ENTER || code == KeyCode.Z || code == KeyCode.SPACE) {
-                executePauseOption();
-            }
-            return; // Blocca altri input di gioco
-        }
-
-        if (currentState == GameState.GAME_OVER || currentState == GameState.VICTORY) {
-            if (code == KeyCode.ENTER) {
-                if (mainApp != null) mainApp.showMenuScreen();
-            }
+            if (code == KeyCode.UP) pauseIndex = (pauseIndex - 1 + pauseOptions.length) % pauseOptions.length;
+            else if (code == KeyCode.DOWN) pauseIndex = (pauseIndex + 1) % pauseOptions.length;
+            else if (code == KeyCode.ENTER || code == KeyCode.Z) executePauseOption();
             return;
         }
-
+        if (currentState == GameState.GAME_OVER || currentState == GameState.VICTORY) {
+            if (code == KeyCode.ENTER) { if (mainApp != null) mainApp.showMenuScreen(); }
+            return;
+        }
         if (currentState == GameState.RESPAWNING) return;
 
         // INPUT GIOCO NORMALE
         if (player.isIdle()) {
             int targetCol = player.getCol();
             int targetRow = player.getRow();
+            
+            // Determina la direzione desiderata
+            Player.Direction dir = null;
             switch (code) {
-                case UP:    targetRow--; break;
-                case DOWN:  targetRow++; break;
-                case LEFT:  targetCol--; break;
-                case RIGHT: targetCol++; break;
+                case UP:    dir = Player.Direction.UP; targetRow--; break;
+                case DOWN:  dir = Player.Direction.DOWN; targetRow++; break;
+                case LEFT:  dir = Player.Direction.LEFT; targetCol--; break;
+                case RIGHT: dir = Player.Direction.RIGHT; targetCol++; break;
                 default: break;
             }
-            if (code == KeyCode.UP || code == KeyCode.DOWN || code == KeyCode.LEFT || code == KeyCode.RIGHT) {
+            
+            // Se c'è un movimento direzionale
+            if (dir != null) {
+                // Imposta SEMPRE la direzione (così il player si gira anche se sbatte contro il muro)
+                player.setDirection(dir);
+                
+                // Poi prova a muoverti
                 if (!isBombAt(targetCol, targetRow)) {
                     player.moveTo(targetCol, targetRow, gameMap);
                 }
             }
         }
         
-        if (code == KeyCode.Z && !bombKeyPressed) {
-            bombKeyPressed = true;
-            placeBomb();
-        }
-
-        if (code == KeyCode.X && !remoteKeyPressed) {
-            remoteKeyPressed = true;
-            triggerRemoteBomb();
-        }
+        if (code == KeyCode.Z && !bombKeyPressed) { bombKeyPressed = true; placeBomb(); }
+        if (code == KeyCode.X && !remoteKeyPressed) { remoteKeyPressed = true; triggerRemoteBomb(); }
+    }
+    
+    private void executePauseOption() {
+        if (pauseIndex == 0) { System.out.println("Opzioni non ancora implementate"); } 
+        else if (pauseIndex == 1) { if (mainApp != null) mainApp.showMenuScreen(); }
     }
     
     public void onKeyReleased(KeyCode code) {
         if (code == KeyCode.Z) bombKeyPressed = false;
         if (code == KeyCode.X) remoteKeyPressed = false;
-        if (code == KeyCode.ESCAPE) pauseKeyPressed = false; // Reset flag pausa
     }
     
-    private void togglePause() {
-        if (currentState == GameState.PLAYING) {
-            currentState = GameState.PAUSED;
-            pauseIndex = 0;
-        } else if (currentState == GameState.PAUSED) {
-            currentState = GameState.PLAYING;
-        }
-    }
-    
-    private void executePauseOption() {
-        if (pauseIndex == 0) { 
-            // OPTIONS
-            System.out.println("Opzioni non ancora implementate");
-        } else if (pauseIndex == 1) { 
-            // EXIT
-            if (mainApp != null) mainApp.showMenuScreen();
-        }
-    }
-    
-    // ... Metodi di logica standard (spawn, update, collisioni) ...
+    // ... Altri metodi invariati ...
     private void spawnEnemies(int columns, int rows) {
         enemies.clear(); 
         if (columns > 2 && rows > 2) {
@@ -295,22 +217,6 @@ public class GameController {
             Coord p = emptyLocations.remove(index);
             objectives.add(new Objective(p.x, p.y));
         }
-    }
-    public void startGame() {
-        gameMap = new GameMap(MAP_COLUMNS, MAP_ROWS); 
-        player = new Player(1, 1, (GameMap.TILE_SIZE - Player.SIZE) / 2.0); 
-        spawnEnemies(MAP_COLUMNS, MAP_ROWS);
-        spawnObjectives(MAP_COLUMNS, MAP_ROWS);
-        powerUps.clear(); bombs.clear(); explosions.clear(); 
-        lives = 3; score = 0; enemiesKilled = 0; timeLeft = 240.0; 
-        currentState = GameState.PLAYING;
-        lastFrameTime = System.nanoTime();
-        gameLoop.start();
-        gameCanvas.requestFocus(); 
-    }
-    public void stopGame() {
-        gameLoop.stop();
-        bombs.clear(); enemies.clear(); powerUps.clear(); objectives.clear(); explosions.clear();
     }
     private void updateExplosions() {
         Iterator<Explosion> it = explosions.iterator();
@@ -343,13 +249,12 @@ public class GameController {
         if (lives > 0) { currentState = GameState.RESPAWNING; stateTimer = 3.0; } 
         else { currentState = GameState.GAME_OVER; }
     }
-    private void finishRespawn() {
-        double playerOffset = (GameMap.TILE_SIZE - Player.SIZE) / 2.0;
-        player = new Player(1, 1, playerOffset);
+    private void finishRespawn() { 
+        player = new Player(1, 1, (GameMap.TILE_SIZE - Player.SIZE) / 2.0);
         player.activateImmunity(60);
         for (Enemy enemy : enemies) enemy.resetPosition();
         bombs.clear(); explosions.clear(); 
-        currentState = GameState.PLAYING;
+        currentState = GameState.PLAYING; 
     }
     private void checkObjectiveCollection() {
         Iterator<Objective> it = objectives.iterator();
@@ -444,4 +349,6 @@ public class GameController {
     private void markDanger(int r, int c) {
         if (r >= 0 && r < dangerMap.length && c >= 0 && c < dangerMap[0].length) dangerMap[r][c] = true;
     }
+    public void startGame() { gameLoop.start(); gameCanvas.requestFocus(); }
+    public void stopGame() { gameLoop.stop(); }
 }

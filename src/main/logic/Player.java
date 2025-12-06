@@ -5,6 +5,8 @@ import java.util.List;
 
 public class Player {
     public enum State { IDLE, MOVING }
+    public enum Direction { UP, DOWN, LEFT, RIGHT } // Nuova enum per la direzione
+    
     public static final double SIZE = 48; 
     
     private double x, y; 
@@ -12,18 +14,21 @@ public class Player {
     private double targetX, targetY; 
     private double offset; 
     private State state = State.IDLE;
+    private Direction direction = Direction.DOWN; // Direzione di default: Fronte
+    
     private int immunityFrames = 0;
-
     private double moveSpeed = 6.0; 
     private int maxBombs = 1;     
     private int explosionRadius = 2; 
     private static final int ABSOLUTE_MAX_BOMBS = 5; 
     private static final double MAX_SPEED = 12.0; 
+    
+    private boolean hasKick = false;
+    private boolean hasPunch = false;
     private boolean hasRemote = false;
     
     private List<PowerUpType> activePowerUps = new ArrayList<>();
     private static final int MAX_TOTAL_POWERUPS = 2; 
-
     private int objectivesCollected = 0;
     private static final int TOTAL_OBJECTIVES_TO_WIN = 3;
 
@@ -54,6 +59,15 @@ public class Player {
     public void activateImmunity(int frames) { immunityFrames = frames; }
     public boolean isImmune() { return immunityFrames > 0; }
     public int getImmunityFrames() { return immunityFrames; }
+
+    // Imposta la direzione
+    public void setDirection(Direction dir) {
+        this.direction = dir;
+    }
+    
+    public Direction getDirection() {
+        return direction;
+    }
 
     public void moveTo(int targetCol, int targetRow, GameMap map) {
         if (state != State.IDLE) return; 
