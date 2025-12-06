@@ -37,7 +37,10 @@ public class GameController {
     
     private boolean bombKeyPressed = false; 
     private boolean remoteKeyPressed = false; 
-    private boolean pauseKeyPressed = false;
+    
+    // --- MENU PAUSA ---
+    private String[] pauseOptions = {"OPTIONS", "EXIT"};
+    private int pauseIndex = 0;
 
     private double enemyOffset = 0; 
     private boolean[][] dangerMap; 
@@ -48,6 +51,7 @@ public class GameController {
     
     private static final int MAX_PLAYER_POWERUPS = 2;
     
+    // Dimensioni
     private static final int MAP_COLUMNS = 13;
     private static final int MAP_ROWS = 11;
     private static final double WINDOW_WIDTH = 1024;
@@ -102,10 +106,12 @@ public class GameController {
     
     private void draw() {
         renderer.clear();
+        
         if (currentState == GameState.RESPAWNING) {
             renderer.drawRespawnScreen(lives);
             return;
         }
+        
         if (currentState == GameState.VICTORY) {
             renderer.drawVictoryScreen(score, stateTimer);
             return;
@@ -118,9 +124,10 @@ public class GameController {
         );
 
         if (currentState == GameState.GAME_OVER) {
-            renderer.drawGameOverOverlay(); // Metodo dedicato nel renderer
+            renderer.drawGameOverOverlay();
         } else if (currentState == GameState.PAUSED) {
-            renderer.drawPauseOverlay(); // Metodo dedicato nel renderer
+            // Disegna il menu di pausa invece del semplice overlay
+            renderer.drawPauseMenu(pauseOptions, pauseIndex);
         }
     }
 
@@ -163,14 +170,11 @@ public class GameController {
         Iterator<Enemy> enemyIterator = enemies.iterator();
         while (enemyIterator.hasNext()) {
             Enemy enemy = enemyIterator.next();
-            // --- MODIFICA: Passaggio del player all'update del nemico per l'IA ---
             enemy.update(gameMap, dangerMap, bombs, player); 
         }
         
         checkPlayerCollisions();
     }
-    
-    // ... (Metodi spawnEnemies, spawnObjectives, onKeyPressed, ecc. identici a prima)
 
     private void spawnEnemies(int columns, int rows) {
         enemies.clear(); 
@@ -204,25 +208,43 @@ public class GameController {
     }
 
     public void onKeyPressed(KeyCode code) {
-        if (code == KeyCode.ENTER) {
-            if (currentState != GameState.GAME_OVER && currentState != GameState.VICTORY) {
-                if (!pauseKeyPressed) {
-                    pauseKeyPressed = true;
-                    togglePause();
-                }
-                return; 
-            }
-        }
-
-        if (currentState == GameState.GAME_OVER || currentState == GameState.VICTORY) {
-            if (code == KeyCode.ENTER || code == KeyCode.ESCAPE) {
+        // GESTIONE PAUSA (ESC)
+        if (code == KeyCode.ESCAPE) {
+            if (currentState == GameState.PLAYING) {
+                currentState = GameState.PAUSED;
+                pauseIndex = 0; // Reset selezione
+            } else if (currentState == GameState.PAUSED) {
+                currentState = GameState.PLAYING;
+            } else if (currentState == GameState.GAME_OVER || currentState == GameState.VICTORY) {
                 if (mainApp != null) mainApp.showMenuScreen();
             }
             return;
         }
 
-        if (currentState == GameState.PAUSED || currentState == GameState.RESPAWNING) return;
+        // GESTIONE INPUT DURANTE LA PAUSA
+        if (currentState == GameState.PAUSED) {
+            if (code == KeyCode.UP) {
+                pauseIndex--;
+                if (pauseIndex < 0) pauseIndex = pauseOptions.length - 1;
+            } else if (code == KeyCode.DOWN) {
+                pauseIndex++;
+                if (pauseIndex >= pauseOptions.length) pauseIndex = 0;
+            } else if (code == KeyCode.ENTER || code == KeyCode.Z || code == KeyCode.SPACE) {
+                executePauseOption();
+            }
+            return; // Blocca altri input di gioco
+        }
 
+        if (currentState == GameState.GAME_OVER || currentState == GameState.VICTORY) {
+            if (code == KeyCode.ENTER) {
+                if (mainApp != null) mainApp.showMenuScreen();
+            }
+            return;
+        }
+
+        if (currentState == GameState.RESPAWNING) return;
+
+        // INPUT GIOCO NORMALE
         if (player.isIdle()) {
             int targetCol = player.getCol();
             int targetRow = player.getRow();
@@ -249,8 +271,14 @@ public class GameController {
             remoteKeyPressed = true;
             triggerRemoteBomb();
         }
-
-        if (code == KeyCode.ESCAPE) {
+    }
+    
+    private void executePauseOption() {
+        if (pauseIndex == 0) { 
+            // OPTIONS (Futuro)
+            System.out.println("Opzioni non ancora implementate");
+        } else if (pauseIndex == 1) { 
+            // EXIT
             if (mainApp != null) mainApp.showMenuScreen();
         }
     }
@@ -258,17 +286,8 @@ public class GameController {
     public void onKeyReleased(KeyCode code) {
         if (code == KeyCode.Z) bombKeyPressed = false;
         if (code == KeyCode.X) remoteKeyPressed = false;
-        if (code == KeyCode.ENTER) pauseKeyPressed = false;
     }
     
-    private void togglePause() {
-        if (currentState == GameState.PLAYING) {
-            currentState = GameState.PAUSED;
-        } else if (currentState == GameState.PAUSED) {
-            currentState = GameState.PLAYING;
-        }
-    }
-
     public void startGame() {
         gameMap = new GameMap(MAP_COLUMNS, MAP_ROWS); 
         player = new Player(1, 1, (GameMap.TILE_SIZE - Player.SIZE) / 2.0); 

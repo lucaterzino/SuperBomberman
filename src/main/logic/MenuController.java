@@ -11,6 +11,7 @@ import main.view.MenuRenderer;
 public class MenuController {
 
     @FXML private Canvas menuCanvas;
+    
     private MenuRenderer renderer; // VIEW
     private Gioco mainApp;
     private AnimationTimer menuLoop;
@@ -27,9 +28,10 @@ public class MenuController {
 
     @FXML
     public void initialize() {
-        // Inizializza Renderer (View)
+        // Inizializza il renderer (View) passando il contesto grafico
         renderer = new MenuRenderer(menuCanvas.getGraphicsContext2D(), 1024, 768);
 
+        // Definisci il loop di animazione
         menuLoop = new AnimationTimer() {
             @Override
             public void handle(long now) {
@@ -37,7 +39,24 @@ public class MenuController {
                 draw();
             }
         };
-        menuLoop.start();
+        
+        // Avvia subito il loop per la prima visualizzazione
+        startLoop();
+    }
+    
+    // Metodo pubblico per riavviare il loop quando si torna al menu
+    public void startLoop() {
+        if (menuLoop != null) {
+            menuLoop.start();
+        }
+        // Forza un ridisegno immediato per evitare flash neri
+        draw();
+    }
+
+    public void stopLoop() {
+        if (menuLoop != null) {
+            menuLoop.stop();
+        }
     }
 
     public void handleKeyPressed(KeyEvent event) {
@@ -56,17 +75,16 @@ public class MenuController {
 
     private void selectOption() {
         if (selectedIndex == 0) { // NORMAL GAME
-            stopLoop(); 
+            // stopLoop(); // RIMOSSO: Non fermiamo il loop grafico
             if (mainApp != null) {
                 mainApp.showGameScreen();
             }
         } else if (selectedIndex == 2) { // EXIT
             System.exit(0);
+        } else {
+            // OPTION (Placeholder)
+            System.out.println("Opzione non disponibile: " + options[selectedIndex]);
         }
-    }
-    
-    public void stopLoop() {
-        if (menuLoop != null) menuLoop.stop();
     }
 
     private void update() {
@@ -76,7 +94,9 @@ public class MenuController {
     }
 
     private void draw() {
-        // Delega disegno al Renderer
-        renderer.drawMenu(time, cloudX, options, selectedIndex);
+        // Delega tutto il disegno al Renderer
+        if (renderer != null) {
+            renderer.drawMenu(time, cloudX, options, selectedIndex);
+        }
     }
 }
