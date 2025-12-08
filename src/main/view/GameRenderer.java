@@ -383,6 +383,20 @@ public class GameRenderer {
         gc.setTextAlign(TextAlignment.LEFT);
     }
 
+
+    public void drawGameOverScreen(int score, double timer) {
+        gc.setFill(Color.BLACK); gc.fillRect(0, 0, canvasWidth, canvasHeight);
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.setFont(Font.font("Monospaced", FontWeight.BOLD, 80)); gc.setFill(Color.RED);
+        gc.fillText("GAME OVER", canvasWidth/2, canvasHeight/2 - 50);
+        gc.setFont(Font.font("Monospaced", FontWeight.BOLD, 30)); gc.setFill(Color.WHITE);
+        gc.fillText("Punteggio Finale: " + score, canvasWidth/2, canvasHeight/2 + 20);
+        gc.setFont(Font.font("Monospaced", 20)); gc.setFill(Color.LIGHTGRAY);
+        gc.fillText("Menu in " + (int)Math.ceil(timer) + "...", canvasWidth/2, canvasHeight/2 + 80);
+        gc.setTextAlign(TextAlignment.LEFT);
+    }
+
+    
     public void drawVictoryScreen(int score, double timer) {
         gc.setFill(Color.BLACK); gc.fillRect(0, 0, canvasWidth, canvasHeight);
         gc.setTextAlign(TextAlignment.CENTER);
