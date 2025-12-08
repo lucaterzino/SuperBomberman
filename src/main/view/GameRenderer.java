@@ -296,7 +296,7 @@ public class GameRenderer {
         gc.fill(); gc.stroke(); gc.restore();
         gc.setFill(Color.WHITE); gc.setStroke(Color.BLACK); gc.setLineWidth(1);
         gc.setTextAlign(TextAlignment.CENTER); gc.setFont(Font.font("Monospaced", FontWeight.BOLD, 24));
-        gc.fillText(String.valueOf(lives), heartX + 22, centerY + 8); gc.strokeText(String.valueOf(lives), heartX + 22, centerY + 8);
+        gc.fillText(String.valueOf(lives), heartX + 18, centerY + 6); gc.strokeText(String.valueOf(lives), heartX + 18, centerY + 6);
         gc.setTextAlign(TextAlignment.LEFT);
         startX += 90; double textBaselineY = centerY + 10; 
         drawSkullIcon(startX, centerY - 12);
