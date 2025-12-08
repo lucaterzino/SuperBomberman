@@ -38,8 +38,8 @@ public class GameController {
     private boolean bombKeyPressed = false; 
     private boolean remoteKeyPressed = false; 
     
-    // --- MENU PAUSA ---
-    private String[] pauseOptions = {"OPTIONS", "EXIT"};
+    // --- MENU PAUSA (Aggiornato) ---
+    private String[] pauseOptions = {"CONTINUE", "OPTIONS", "EXIT"};
     private int pauseIndex = 0;
 
     private double enemyOffset = 0; 
@@ -117,9 +117,12 @@ public class GameController {
             return;
         }
 
-        // --- MODIFICA: Usa la nuova schermata Game Over con timer ---
         if (currentState == GameState.GAME_OVER) {
-            renderer.drawGameOverScreen(score, stateTimer);
+            renderer.drawGameOverOverlay(); // O drawGameOverScreen se preferisci quella col timer
+            // Se usi drawGameOverScreen, assicurati di passare score e stateTimer se necessario
+            // renderer.drawGameOverScreen(score, stateTimer); 
+            // Per ora mantengo l'overlay semplice come da richiesta precedente, 
+            // ma se vuoi la schermata rossa a tempo pieno, usa l'altro metodo del renderer.
             return;
         }
 
@@ -129,6 +132,7 @@ public class GameController {
             MAP_OFFSET_X, MAP_OFFSET_Y
         );
 
+        // Se in pausa, disegna il menu sopra tutto
         if (currentState == GameState.PAUSED) {
             renderer.drawPauseMenu(pauseOptions, pauseIndex);
         }
@@ -145,22 +149,29 @@ public class GameController {
             return; 
         }
         
-        // --- MODIFICA: Gestione timer per Vittoria E Game Over ---
-        if (currentState == GameState.VICTORY || currentState == GameState.GAME_OVER) {
+        if (currentState == GameState.VICTORY) {
             stateTimer -= deltaTime;
             if (stateTimer <= 0) {
                 if (mainApp != null) mainApp.showMenuScreen();
             }
             return;
         }
+        
+        // Se si usa il GAME_OVER a tempo (come vittoria), scommentare:
+        /*
+        if (currentState == GameState.GAME_OVER) {
+             stateTimer -= deltaTime;
+             if (stateTimer <= 0) if(mainApp!=null) mainApp.showMenuScreen();
+             return;
+        }
+        */
+
+        if (currentState == GameState.GAME_OVER) return; 
 
         timeLeft -= deltaTime;
-        
-        // --- MODIFICA: Se il tempo scade, GAME OVER immediato ---
         if (timeLeft <= 0) {
             timeLeft = 0;
-            currentState = GameState.GAME_OVER;
-            stateTimer = 5.0; // 5 secondi di schermata Game Over
+            handleDeath(); 
         }
 
         updateDangerMap();
@@ -213,10 +224,11 @@ public class GameController {
     }
 
     public void onKeyPressed(KeyCode code) {
+        // GESTIONE PAUSA (ESC)
         if (code == KeyCode.ESCAPE) {
             if (currentState == GameState.PLAYING) {
                 currentState = GameState.PAUSED;
-                pauseIndex = 0; 
+                pauseIndex = 0; // Reset su CONTINUE
             } else if (currentState == GameState.PAUSED) {
                 currentState = GameState.PLAYING;
             } else if (currentState == GameState.GAME_OVER || currentState == GameState.VICTORY) {
@@ -225,6 +237,7 @@ public class GameController {
             return;
         }
 
+        // GESTIONE INPUT DURANTE LA PAUSA
         if (currentState == GameState.PAUSED) {
             if (code == KeyCode.UP) {
                 pauseIndex--;
@@ -247,6 +260,7 @@ public class GameController {
 
         if (currentState == GameState.RESPAWNING) return;
 
+        // INPUT GIOCO NORMALE
         if (player.isIdle()) {
             int targetCol = player.getCol();
             int targetRow = player.getRow();
@@ -281,9 +295,12 @@ public class GameController {
     
     private void executePauseOption() {
         if (pauseIndex == 0) { 
-            // OPTIONS
+            // CONTINUE
+            togglePause(); // Esce dalla pausa
+        } else if (pauseIndex == 1) {
+            // OPTIONS (Placeholder)
             System.out.println("Opzioni non ancora implementate");
-        } else if (pauseIndex == 1) { 
+        } else if (pauseIndex == 2) { 
             // EXIT
             if (mainApp != null) mainApp.showMenuScreen();
         }
@@ -294,6 +311,14 @@ public class GameController {
         if (code == KeyCode.X) remoteKeyPressed = false;
     }
     
+    private void togglePause() {
+        if (currentState == GameState.PLAYING) {
+            currentState = GameState.PAUSED;
+        } else if (currentState == GameState.PAUSED) {
+            currentState = GameState.PLAYING;
+        }
+    }
+
     public void startGame() {
         gameMap = new GameMap(MAP_COLUMNS, MAP_ROWS); 
         player = new Player(1, 1, (GameMap.TILE_SIZE - Player.SIZE) / 2.0); 
@@ -362,9 +387,7 @@ public class GameController {
             currentState = GameState.RESPAWNING;
             stateTimer = 3.0; 
         } else {
-            // --- MODIFICA: Se vite finite, GAME OVER con timer ---
             currentState = GameState.GAME_OVER;
-            stateTimer = 5.0;
         }
     }
     
@@ -388,7 +411,7 @@ public class GameController {
                 score += 1000; 
                 if (player.hasWon()) {
                     currentState = GameState.VICTORY;
-                    stateTimer = 5.0; // 5 Secondi di vittoria
+                    stateTimer = 10.0; 
                 }
             }
         }
