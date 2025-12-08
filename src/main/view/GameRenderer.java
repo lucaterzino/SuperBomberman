@@ -346,7 +346,7 @@ public class GameRenderer {
 
     public void drawPauseMenu(String[] options, int selectedIndex) {
         gc.setFill(Color.rgb(0, 0, 0, 0.6)); gc.fillRect(0, 0, canvasWidth, canvasHeight);
-        double menuW = 400; double menuH = 300;
+        double menuW = 400; double menuH = 350;
         double x = (canvasWidth - menuW) / 2; double y = (canvasHeight - menuH) / 2;
         gc.setFill(Color.web("#00008B")); gc.fillRect(x, y, menuW, menuH);
         gc.setStroke(Color.ORANGE); gc.setLineWidth(6); gc.strokeRect(x, y, menuW, menuH);
@@ -396,7 +396,7 @@ public class GameRenderer {
         gc.setTextAlign(TextAlignment.LEFT);
     }
 
-    
+
     public void drawVictoryScreen(int score, double timer) {
         gc.setFill(Color.BLACK); gc.fillRect(0, 0, canvasWidth, canvasHeight);
         gc.setTextAlign(TextAlignment.CENTER);
