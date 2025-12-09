@@ -300,12 +300,18 @@ public class GameController {
     private void togglePause() {
         if (currentState == GameState.PLAYING) {
             currentState = GameState.PAUSED;
+            AudioManager.getInstance().pauseMusic();
         } else if (currentState == GameState.PAUSED) {
             currentState = GameState.PLAYING;
+            AudioManager.getInstance().resumeMusic();
         }
     }
 
     public void startGame() {
+        // Avvia Musica
+        AudioManager.getInstance().playMusic("/audio/game_theme.mp3");
+        AudioManager.getInstance().playSound("spawn");
+
         gameMap = new GameMap(MAP_COLUMNS, MAP_ROWS); 
         player = new Player(1, 1, (GameMap.TILE_SIZE - Player.SIZE) / 2.0); 
         spawnEnemies(MAP_COLUMNS, MAP_ROWS);
@@ -369,6 +375,7 @@ public class GameController {
     private void handleDeath() {
         if (currentState != GameState.PLAYING) return; 
         lives--;
+        AudioManager.getInstance().playSound("death"); // SUONO MORTE
         if (lives > 0) {
             currentState = GameState.RESPAWNING;
             stateTimer = 3.0; 
@@ -387,6 +394,7 @@ public class GameController {
         bombs.clear();
         explosions.clear(); 
         currentState = GameState.PLAYING;
+        AudioManager.getInstance().playSound("spawn"); // READY GO!
     }
 
     private void checkObjectiveCollection() {
@@ -397,9 +405,12 @@ public class GameController {
                 player.collectObjective();
                 it.remove();
                 score += 1000; 
+                AudioManager.getInstance().playSound("powerup"); // SUONO RACCOLTA
                 if (player.hasWon()) {
                     currentState = GameState.VICTORY;
                     stateTimer = 5.0; 
+                    AudioManager.getInstance().stopMusic(); // Ferma musica gioco
+                    AudioManager.getInstance().playSound("win"); // JINGLE VITTORIA
                 }
             }
         }
@@ -413,6 +424,7 @@ public class GameController {
                 boolean collected = player.addPowerUp(p.getType());
                 if (collected) {
                     it.remove(); 
+                    AudioManager.getInstance().playSound("powerup"); // DING!
                 }
             }
         }
@@ -425,6 +437,7 @@ public class GameController {
         if (isBombAt(col, row)) return;
         if (!gameMap.isTileSolid(col, row)) {
             bombs.add(new Bomb(col, row, player.hasRemote()));
+            AudioManager.getInstance().playSound("bomb_place"); // CLICK!
         }
     }
 
@@ -458,6 +471,7 @@ public class GameController {
         int r = bomb.getRow();
         int c = bomb.getCol();
         int radius = player.getExplosionRadius();
+        AudioManager.getInstance().playSound("explosion"); // BOOM!
 
         fireAt(r, c); 
         for (int i = 1; i <= radius; i++) { if(!fireAt(r - i, c)) break; }

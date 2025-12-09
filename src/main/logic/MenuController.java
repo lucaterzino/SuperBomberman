@@ -11,12 +11,21 @@ import main.view.MenuRenderer;
 public class MenuController {
 
     @FXML private Canvas menuCanvas;
-    private MenuRenderer renderer;
+    
+    private MenuRenderer renderer; 
     private Gioco mainApp;
     private AnimationTimer menuLoop;
 
+    // Stati del menu
+    private enum MenuState { MAIN, OPTIONS }
+    private MenuState currentState = MenuState.MAIN;
+
+    // Main Menu
     private String[] options = {"NORMAL GAME", "OPTION", "EXIT"};
     private int selectedIndex = 0;
+    
+    // Options Menu
+    private int optionIndex = 0; // 0 = Volume, 1 = Back
     
     private double time = 0;
     private double cloudX = 0;
@@ -27,10 +36,8 @@ public class MenuController {
 
     @FXML
     public void initialize() {
-        // Inizializza View
         renderer = new MenuRenderer(menuCanvas.getGraphicsContext2D(), 1024, 768);
 
-        // Definisci Loop
         menuLoop = new AnimationTimer() {
             @Override
             public void handle(long now) {
@@ -38,55 +45,84 @@ public class MenuController {
                 draw();
             }
         };
-        
-        // Avvia subito
         startLoop();
     }
     
-    // Metodo per avviare il loop (chiamato da Gioco.java quando si torna al menu)
     public void startLoop() {
-        if (menuLoop != null) {
-            menuLoop.start();
-        }
-        // Forza il focus sul canvas per ricevere input tastiera
-        if (menuCanvas != null) {
-            menuCanvas.requestFocus();
-            // Disegna un frame immediatamente per evitare flash neri/blu
-            draw();
-        }
+        if (menuLoop != null) menuLoop.start();
+        AudioManager.getInstance().playMusic("/audio/menu_theme.mp3");
+        draw();
+        if (menuCanvas != null) menuCanvas.requestFocus();
     }
 
     public void stopLoop() {
-        if (menuLoop != null) {
-            menuLoop.stop();
-        }
+        if (menuLoop != null) menuLoop.stop();
     }
 
     public void handleKeyPressed(KeyEvent event) {
         KeyCode code = event.getCode();
         
+        if (currentState == MenuState.MAIN) {
+            handleMainInput(code);
+        } else if (currentState == MenuState.OPTIONS) {
+            handleOptionInput(code);
+        }
+    }
+    
+    private void handleMainInput(KeyCode code) {
         if (code == KeyCode.UP) {
             selectedIndex--;
             if (selectedIndex < 0) selectedIndex = options.length - 1;
+            AudioManager.getInstance().playSound("cursor");
         } else if (code == KeyCode.DOWN) {
             selectedIndex++;
             if (selectedIndex >= options.length) selectedIndex = 0;
+            AudioManager.getInstance().playSound("cursor");
         } else if (code == KeyCode.ENTER || code == KeyCode.SPACE || code == KeyCode.Z) {
             selectOption();
+        }
+    }
+    
+    private void handleOptionInput(KeyCode code) {
+        if (code == KeyCode.UP || code == KeyCode.DOWN) {
+            optionIndex = (optionIndex == 0) ? 1 : 0; // Toggle tra Volume e Back
+            AudioManager.getInstance().playSound("cursor");
+        } else if (code == KeyCode.LEFT) {
+            if (optionIndex == 0) { // Abbassa volume
+                double vol = AudioManager.getInstance().getVolume();
+                AudioManager.getInstance().setVolume(vol - 0.1);
+                AudioManager.getInstance().playSound("cursor");
+            }
+        } else if (code == KeyCode.RIGHT) {
+            if (optionIndex == 0) { // Alza volume
+                double vol = AudioManager.getInstance().getVolume();
+                AudioManager.getInstance().setVolume(vol + 0.1);
+                AudioManager.getInstance().playSound("cursor");
+            }
+        } else if (code == KeyCode.ENTER || code == KeyCode.Z) {
+            if (optionIndex == 1) { // BACK
+                currentState = MenuState.MAIN;
+                AudioManager.getInstance().playSound("confirm");
+            }
+        } else if (code == KeyCode.ESCAPE) {
+            currentState = MenuState.MAIN;
+            AudioManager.getInstance().playSound("confirm");
         }
     }
 
     private void selectOption() {
         if (selectedIndex == 0) { // NORMAL GAME
-            stopLoop(); // Ferma l'animazione del menu mentre si gioca
+            AudioManager.getInstance().playSound("confirm");
+            AudioManager.getInstance().stopMusic(); // Ferma musica menu
             if (mainApp != null) {
                 mainApp.showGameScreen();
             }
+        } else if (selectedIndex == 1) { // OPTION
+            currentState = MenuState.OPTIONS;
+            optionIndex = 0;
+            AudioManager.getInstance().playSound("confirm");
         } else if (selectedIndex == 2) { // EXIT
             System.exit(0);
-        } else {
-            // OPTION
-            System.out.println("Opzione non disponibile: " + options[selectedIndex]);
         }
     }
 
@@ -98,7 +134,11 @@ public class MenuController {
 
     private void draw() {
         if (renderer != null) {
-            renderer.drawMenu(time, cloudX, options, selectedIndex);
+            if (currentState == MenuState.MAIN) {
+                renderer.drawMenu(time, cloudX, options, selectedIndex);
+            } else {
+                renderer.drawOptions(AudioManager.getInstance().getVolume(), optionIndex);
+            }
         }
     }
 }
