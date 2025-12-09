@@ -23,7 +23,7 @@ public class GameController {
     private AnimationTimer gameLoop;
 
     public enum GameState {
-        PLAYING, RESPAWNING, GAME_OVER, VICTORY, PAUSED
+        PLAYING, RESPAWNING, GAME_OVER, VICTORY, PAUSED, OPTIONS
     }
     
     private GameState currentState = GameState.PLAYING;
@@ -42,13 +42,15 @@ public class GameController {
     private String[] pauseOptions = {"CONTINUE", "OPTIONS", "EXIT"};
     private int pauseIndex = 0;
 
+     // --- MENU OPZIONI (In-Game) ---
+     private int optionIndex = 0; // 0 = Volume, 1 = Back
+
     private double enemyOffset = 0; 
     private boolean[][] dangerMap; 
 
     private static final double TARGET_FPS = 30.0;
     private static final double TARGET_NANO_PER_FRAME = 1_000_000_000.0 / TARGET_FPS;
     private long lastFrameTime = 0; 
-    
     private static final int MAX_PLAYER_POWERUPS = 2;
     
     // Dimensioni
@@ -103,39 +105,166 @@ public class GameController {
     public void setMainApp(Gioco mainApp) { 
         this.mainApp = mainApp; 
     }
+
+
+    public void startGame() {
+        // Avvia Musica
+        AudioManager.getInstance().playMusic("/audio/game_theme.mp3");
+        AudioManager.getInstance().playSound("spawn");
+
+        gameMap = new GameMap(MAP_COLUMNS, MAP_ROWS); 
+        player = new Player(1, 1, (GameMap.TILE_SIZE - Player.SIZE) / 2.0); 
+        spawnEnemies(MAP_COLUMNS, MAP_ROWS);
+        spawnObjectives(MAP_COLUMNS, MAP_ROWS);
+        powerUps.clear(); 
+        bombs.clear();
+        explosions.clear(); 
+        lives = 3;
+        score = 0;
+        enemiesKilled = 0;
+        timeLeft = 240.0; 
+        currentState = GameState.PLAYING;
+        lastFrameTime = System.nanoTime();
+        gameLoop.start();
+        gameCanvas.requestFocus(); 
+    }
+
+    public void stopGame() {
+        gameLoop.stop();
+        bombs.clear();
+        enemies.clear(); 
+        powerUps.clear();
+        objectives.clear();
+        explosions.clear();
+    }
+
     
-    private void draw() {
-        renderer.clear();
-        
-        if (currentState == GameState.RESPAWNING) {
-            renderer.drawRespawnScreen(lives);
-            return;
-        }
-        
-        if (currentState == GameState.VICTORY) {
-            renderer.drawVictoryScreen(score, stateTimer);
-            return;
-        }
-
-        // --- MODIFICA: Usa la nuova schermata Game Over con timer ---
-        if (currentState == GameState.GAME_OVER) {
-            renderer.drawGameOverScreen(score, stateTimer);
-            return;
-        }
-
-        renderer.drawHUD(lives, score, enemiesKilled, timeLeft, player.getActivePowerUps());
-        renderer.drawGameScene(
-            gameMap, player, enemies, bombs, explosions, powerUps, objectives, 
-            MAP_OFFSET_X, MAP_OFFSET_Y
-        );
-
-        if (currentState == GameState.PAUSED) {
-            renderer.drawPauseMenu(pauseOptions, pauseIndex);
+    private void togglePause() {
+        if (currentState == GameState.PLAYING) {
+            currentState = GameState.PAUSED;
+            AudioManager.getInstance().pauseMusic();
+        } else if (currentState == GameState.PAUSED) {
+            currentState = GameState.PLAYING;
+            AudioManager.getInstance().resumeMusic();
         }
     }
 
+    public void onKeyPressed(KeyCode code) {
+        if (code == KeyCode.ESCAPE) {
+            if (currentState == GameState.PLAYING) 
+                { togglePause(); return; }
+            if (currentState == GameState.PAUSED) 
+                { togglePause(); return; }
+            if (currentState == GameState.OPTIONS) 
+                { currentState = GameState.PAUSED; return; } // Torna al menu pausa
+            if (currentState == GameState.GAME_OVER || currentState == GameState.VICTORY) 
+                if (mainApp != null) mainApp.showMenuScreen();
+            return;
+        }
+
+        // Gestione Menu Pausa
+        if (currentState == GameState.PAUSED) {
+            if (code == KeyCode.UP) {
+                pauseIndex = (pauseIndex - 1 + pauseOptions.length) % pauseOptions.length;
+                AudioManager.getInstance().playSound("cursor");
+            } else if (code == KeyCode.DOWN) {
+                pauseIndex = (pauseIndex + 1) % pauseOptions.length;
+                AudioManager.getInstance().playSound("cursor");
+            } else if (code == KeyCode.ENTER || code == KeyCode.Z) {
+                executePauseOption();
+            }
+            return; 
+        }
+        
+        // Gestione Menu Opzioni (In-Game)
+        if (currentState == GameState.OPTIONS) {
+            if (code == KeyCode.UP || code == KeyCode.DOWN) {
+                optionIndex = (optionIndex == 0) ? 1 : 0; 
+                AudioManager.getInstance().playSound("cursor");
+            } else if (code == KeyCode.LEFT) {
+                if (optionIndex == 0) { 
+                    double vol = AudioManager.getInstance().getVolume();
+                    AudioManager.getInstance().setVolume(vol - 0.1);
+                    AudioManager.getInstance().playSound("cursor");
+                }
+            } else if (code == KeyCode.RIGHT) {
+                if (optionIndex == 0) { 
+                    double vol = AudioManager.getInstance().getVolume();
+                    AudioManager.getInstance().setVolume(vol + 0.1);
+                    AudioManager.getInstance().playSound("cursor");
+                }
+            } else if (code == KeyCode.ENTER || code == KeyCode.Z) {
+                if (optionIndex == 1) { // BACK
+                    currentState = GameState.PAUSED;
+                    AudioManager.getInstance().playSound("confirm");
+                }
+            }
+            return;
+        }
+
+        if (currentState != GameState.PLAYING) return;
+
+        // Input Gioco
+        if (player.isIdle()) {
+            int tc = player.getCol(); int tr = player.getRow();
+            Player.Direction dir = null;
+            switch (code) {
+                case UP: dir = Player.Direction.UP; tr--; break;
+                case DOWN: dir = Player.Direction.DOWN; tr++; break;
+                case LEFT: dir = Player.Direction.LEFT; tc--; break;
+                case RIGHT: dir = Player.Direction.RIGHT; tc++; break;
+                default: break;
+            }
+            if (dir != null) {
+                player.setDirection(dir);
+                if (!isBombAt(tc, tr)) player.moveTo(tc, tr, gameMap);
+            }
+        }
+        if (code == KeyCode.Z && !bombKeyPressed) { placeBomb(); bombKeyPressed = true; }
+        if (code == KeyCode.X && !remoteKeyPressed) { triggerRemoteBomb(); remoteKeyPressed = true; }
+    }
+
+
+    private void executePauseOption() {
+        if (pauseIndex == 0) { // CONTINUE
+            togglePause();
+            AudioManager.getInstance().playSound("confirm");
+        } else if (pauseIndex == 1) { // OPTIONS
+            currentState = GameState.OPTIONS;
+            optionIndex = 0;
+            AudioManager.getInstance().playSound("confirm");
+        } else if (pauseIndex == 2) { // EXIT
+            if (mainApp != null) mainApp.showMenuScreen();
+            AudioManager.getInstance().playSound("confirm");
+        }
+    }
+    
+    public void onKeyReleased(KeyCode code) {
+        if (code == KeyCode.Z) bombKeyPressed = false;
+        if (code == KeyCode.X) remoteKeyPressed = false;
+    }
+    
+
+
+    private void draw() {
+        renderer.clear();
+        if (currentState == GameState.RESPAWNING) { renderer.drawRespawnScreen(lives); return; }
+        if (currentState == GameState.VICTORY) { renderer.drawVictoryScreen(score, stateTimer); return; }
+        if (currentState == GameState.GAME_OVER) { renderer.drawGameOverScreen(score, stateTimer); return; }
+
+        renderer.drawHUD(lives, score, enemiesKilled, timeLeft, player.getActivePowerUps());
+        renderer.drawGameScene(gameMap, player, enemies, bombs, explosions, powerUps, objectives, MAP_OFFSET_X, MAP_OFFSET_Y);
+
+        if (currentState == GameState.PAUSED) {
+            renderer.drawPauseMenu(pauseOptions, pauseIndex);
+        } else if (currentState == GameState.OPTIONS) {
+           // Disegna il menu opzioni sopra il gioco in pausa
+            renderer.drawOptionsScreen(AudioManager.getInstance().getVolume(), optionIndex);
+        }
+    }
     private void update(double deltaTime) {
-        if (currentState == GameState.PAUSED) return;
+        // BLOCCO: Se in Pausa o in Opzioni, il gioco è congelato
+        if (currentState == GameState.PAUSED || currentState == GameState.OPTIONS) return;
 
         if (currentState == GameState.RESPAWNING) {
             stateTimer -= deltaTime;
@@ -212,132 +341,7 @@ public class GameController {
         }
     }
 
-    public void onKeyPressed(KeyCode code) {
-        if (code == KeyCode.ESCAPE) {
-            if (currentState == GameState.PLAYING) {
-                currentState = GameState.PAUSED;
-                pauseIndex = 0; 
-            } else if (currentState == GameState.PAUSED) {
-                currentState = GameState.PLAYING;
-            } else if (currentState == GameState.GAME_OVER || currentState == GameState.VICTORY) {
-                if (mainApp != null) mainApp.showMenuScreen();
-            }
-            return;
-        }
 
-        if (currentState == GameState.PAUSED) {
-            if (code == KeyCode.UP) {
-                pauseIndex--;
-                if (pauseIndex < 0) pauseIndex = pauseOptions.length - 1;
-            } else if (code == KeyCode.DOWN) {
-                pauseIndex++;
-                if (pauseIndex >= pauseOptions.length) pauseIndex = 0;
-            } else if (code == KeyCode.ENTER || code == KeyCode.Z || code == KeyCode.SPACE) {
-                executePauseOption();
-            }
-            return; 
-        }
-
-        if (currentState == GameState.GAME_OVER || currentState == GameState.VICTORY) {
-            if (code == KeyCode.ENTER) {
-                if (mainApp != null) mainApp.showMenuScreen();
-            }
-            return;
-        }
-
-        if (currentState == GameState.RESPAWNING) return;
-
-        if (player.isIdle()) {
-            int targetCol = player.getCol();
-            int targetRow = player.getRow();
-            
-            Player.Direction dir = null;
-            switch (code) {
-                case UP:    dir = Player.Direction.UP; targetRow--; break;
-                case DOWN:  dir = Player.Direction.DOWN; targetRow++; break;
-                case LEFT:  dir = Player.Direction.LEFT; targetCol--; break;
-                case RIGHT: dir = Player.Direction.RIGHT; targetCol++; break;
-                default: break;
-            }
-            
-            if (dir != null) {
-                player.setDirection(dir);
-                if (!isBombAt(targetCol, targetRow)) {
-                    player.moveTo(targetCol, targetRow, gameMap);
-                }
-            }
-        }
-        
-        if (code == KeyCode.Z && !bombKeyPressed) {
-            bombKeyPressed = true;
-            placeBomb();
-        }
-
-        if (code == KeyCode.X && !remoteKeyPressed) {
-            remoteKeyPressed = true;
-            triggerRemoteBomb();
-        }
-    }
-    
-    private void executePauseOption() {
-        if (pauseIndex == 0) { 
-            // CONTINUE
-            togglePause(); 
-        } else if (pauseIndex == 1) { 
-            // OPTIONS
-            System.out.println("Opzioni non ancora implementate");
-        } else if (pauseIndex == 2) { 
-            // EXIT
-            if (mainApp != null) mainApp.showMenuScreen();
-        }
-    }
-    
-    public void onKeyReleased(KeyCode code) {
-        if (code == KeyCode.Z) bombKeyPressed = false;
-        if (code == KeyCode.X) remoteKeyPressed = false;
-    }
-    
-    private void togglePause() {
-        if (currentState == GameState.PLAYING) {
-            currentState = GameState.PAUSED;
-            AudioManager.getInstance().pauseMusic();
-        } else if (currentState == GameState.PAUSED) {
-            currentState = GameState.PLAYING;
-            AudioManager.getInstance().resumeMusic();
-        }
-    }
-
-    public void startGame() {
-        // Avvia Musica
-        AudioManager.getInstance().playMusic("/audio/game_theme.mp3");
-        AudioManager.getInstance().playSound("spawn");
-
-        gameMap = new GameMap(MAP_COLUMNS, MAP_ROWS); 
-        player = new Player(1, 1, (GameMap.TILE_SIZE - Player.SIZE) / 2.0); 
-        spawnEnemies(MAP_COLUMNS, MAP_ROWS);
-        spawnObjectives(MAP_COLUMNS, MAP_ROWS);
-        powerUps.clear(); 
-        bombs.clear();
-        explosions.clear(); 
-        lives = 3;
-        score = 0;
-        enemiesKilled = 0;
-        timeLeft = 240.0; 
-        currentState = GameState.PLAYING;
-        lastFrameTime = System.nanoTime();
-        gameLoop.start();
-        gameCanvas.requestFocus(); 
-    }
-
-    public void stopGame() {
-        gameLoop.stop();
-        bombs.clear();
-        enemies.clear(); 
-        powerUps.clear();
-        objectives.clear();
-        explosions.clear();
-    }
-    
     private void updateExplosions() {
         Iterator<Explosion> it = explosions.iterator();
         while (it.hasNext()) {

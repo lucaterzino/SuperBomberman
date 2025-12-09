@@ -16,11 +16,11 @@ public class MenuController {
     private Gioco mainApp;
     private AnimationTimer menuLoop;
 
-    // Stati interni del menu
+    // Stati del menu per gestire la navigazione
     private enum MenuState { MAIN, OPTIONS }
     private MenuState currentState = MenuState.MAIN;
 
-    // Opzioni Principali
+    // Opzioni Menu Principale
     private String[] options = {"NORMAL GAME", "OPTION", "EXIT"};
     private int selectedIndex = 0;
     
@@ -46,6 +46,7 @@ public class MenuController {
                 draw();
             }
         };
+        
         startLoop();
     }
     
@@ -55,7 +56,7 @@ public class MenuController {
         // Avvia la musica del menu
         AudioManager.getInstance().playMusic("/audio/menu_theme.mp3");
         
-        draw();
+        draw(); 
         if (menuCanvas != null) menuCanvas.requestFocus();
     }
 
@@ -69,10 +70,11 @@ public class MenuController {
         if (currentState == MenuState.MAIN) {
             handleMainInput(code);
         } else if (currentState == MenuState.OPTIONS) {
-            handleOptionInput(code);
+            handleOptionsInput(code);
         }
     }
     
+    // Gestione input Menu Principale
     private void handleMainInput(KeyCode code) {
         if (code == KeyCode.UP) {
             selectedIndex--;
@@ -87,18 +89,19 @@ public class MenuController {
         }
     }
     
-    private void handleOptionInput(KeyCode code) {
-        // Navigazione Verticale (Volume <-> Back)
+    // Gestione input Menu Opzioni
+    private void handleOptionsInput(KeyCode code) {
+        // Navigazione Verticale (Tra Volume e Back)
         if (code == KeyCode.UP || code == KeyCode.DOWN) {
             optionIndex = (optionIndex == 0) ? 1 : 0; 
             AudioManager.getInstance().playSound("cursor");
         } 
-        // Regolazione Volume (Solo se siamo sulla riga 0)
+        // Regolazione Volume (Solo se siamo sulla riga 0 - Volume)
         else if (code == KeyCode.LEFT) {
             if (optionIndex == 0) { 
                 double vol = AudioManager.getInstance().getVolume();
                 AudioManager.getInstance().setVolume(vol - 0.1);
-                AudioManager.getInstance().playSound("cursor"); // Feedback sonoro volume
+                AudioManager.getInstance().playSound("cursor");
             }
         } else if (code == KeyCode.RIGHT) {
             if (optionIndex == 0) { 
@@ -110,7 +113,7 @@ public class MenuController {
         // Selezione / Torna Indietro
         else if (code == KeyCode.ENTER || code == KeyCode.Z || code == KeyCode.ESCAPE) {
             if (optionIndex == 1 || code == KeyCode.ESCAPE) { // Back o ESC
-                currentState = MenuState.MAIN;
+                currentState = MenuState.MAIN; // Torna al main
                 AudioManager.getInstance().playSound("confirm");
             }
         }
@@ -119,7 +122,7 @@ public class MenuController {
     private void selectOption() {
         if (selectedIndex == 0) { // NORMAL GAME
             AudioManager.getInstance().playSound("confirm");
-            AudioManager.getInstance().stopMusic();
+            AudioManager.getInstance().stopMusic(); // Ferma musica menu
             if (mainApp != null) {
                 mainApp.showGameScreen();
             }

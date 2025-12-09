@@ -71,6 +71,64 @@ public class GameRenderer {
 
         gc.restore();
     }
+
+    // --- NUOVO: Disegno Schermata Opzioni (In-Game) ---
+    public void drawOptionsScreen(double volume, int selectedIndex) {
+        // Disegna sfondo semitrasparente sopra il gioco
+        gc.setFill(Color.rgb(0, 0, 0, 0.8));
+        gc.fillRect(0, 0, canvasWidth, canvasHeight);     
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.setFont(Font.font("Monospaced", FontWeight.BOLD, 60));
+        
+        // Titolo
+        gc.setFill(Color.YELLOW);
+        gc.fillText("OPTIONS", canvasWidth/2, 150);
+        
+        // --- 1. VOLUME BAR ---
+        double barWidth = 400;
+        double barHeight = 40;
+        double barX = (canvasWidth - barWidth) / 2;
+        double barY = 350;
+        
+        // Etichetta Volume
+        gc.setFont(Font.font("Monospaced", FontWeight.BOLD, 40));
+        gc.setFill(selectedIndex == 0 ? Color.WHITE : Color.GRAY);
+        gc.fillText("VOLUME SFX", canvasWidth/2, barY - 30);
+        
+        // Sfondo Barra (Nero)
+        gc.setFill(Color.BLACK);
+        gc.fillRect(barX, barY, barWidth, barHeight);
+        gc.setStroke(Color.WHITE);
+        gc.setLineWidth(4);
+        gc.strokeRect(barX, barY, barWidth, barHeight);
+        
+        // Riempimento Barra (Verde Lime)
+        if (volume > 0) {
+            gc.setFill(Color.LIME);
+            gc.fillRect(barX + 4, barY + 4, (barWidth - 8) * volume, barHeight - 8);
+        }
+        
+        // Testo Percentuale
+        gc.setFill(Color.WHITE);
+        gc.setFont(Font.font("Monospaced", 20));
+        gc.fillText((int)(volume * 100) + "%", canvasWidth/2, barY + barHeight + 30);
+        
+        // --- 2. BACK BUTTON ---
+        double backY = 600;
+        gc.setFont(Font.font("Monospaced", FontWeight.BOLD, 40));
+        gc.setFill(selectedIndex == 1 ? Color.WHITE : Color.GRAY);
+        gc.fillText("BACK", canvasWidth/2, backY);
+        
+        // --- CURSORE ---
+        gc.setFill(Color.ORANGE);
+        if (selectedIndex == 0) {
+            gc.fillText(">", barX - 50, barY + 30); // Accanto alla barra
+        } else {
+            gc.fillText(">", canvasWidth/2 - 100, backY); // Accanto a Back
+        }
+        
+        gc.setTextAlign(TextAlignment.LEFT);
+    }
     
     // --- DISEGNO HUD ---
     public void drawHUD(int lives, int score, int enemiesKilled, double timeLeft, List<PowerUpType> activePowerUps) {

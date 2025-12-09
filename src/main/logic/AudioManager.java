@@ -11,11 +11,10 @@ import java.util.Map;
 public class AudioManager {
 
     private static AudioManager instance;
-    private MediaPlayer musicPlayer; // Per la musica (MP3, supporto streaming/lunga durata)
-    private Map<String, AudioClip> soundEffects; // Per effetti (WAV, in memoria, bassa latenza)
-    
+    private MediaPlayer musicPlayer;
+    private Map<String, AudioClip> soundEffects;
     private boolean isMuted = false;
-    private double globalVolume = 0.5; // Volume generale (0.0 a 1.0)
+    private double globalVolume = 0.5; // Volume default (0.0 - 1.0)
 
     private AudioManager() {
         soundEffects = new HashMap<>();
@@ -30,23 +29,24 @@ public class AudioManager {
     }
 
     private void loadSounds() {
-        // Carica tutti gli effetti sonori in memoria
+        // Carica effetti .wav (Bassa latenza)
         // Assicurati che i file siano in src/audio/ o resources/audio/
-        loadClip("cursor", "/logic/cursor.wav");
-        loadClip("confirm", "logic/confirm.wav");
-        loadClip("bomb_place", "/logic/bomb_place.wav");
-        loadClip("explosion", "/logic/explosion.wav");
-        loadClip("powerup", "/logic/powerup.wav");
-        loadClip("death", "/logic/death.wav");
-        loadClip("win", "/logic/win.wav");
-        loadClip("spawn", "/logic/spawn.wav");
+        loadClip("cursor", "/audio/cursor.wav");
+        loadClip("confirm", "/audio/confirm.wav");
+        loadClip("bomb_place", "/audio/bomb_place.wav");
+        loadClip("explosion", "/audio/explosion.wav");
+        loadClip("powerup", "/audio/powerup.wav");
+        loadClip("death", "/audio/death.wav");
+        loadClip("win", "/audio/win.wav");
+        loadClip("spawn", "/audio/spawn.wav");
     }
 
     private void loadClip(String key, String path) {
         try {
             URL url = getClass().getResource(path);
             if (url != null) {
-                soundEffects.put(key, new AudioClip(url.toExternalForm()));
+                AudioClip clip = new AudioClip(url.toExternalForm());
+                soundEffects.put(key, clip);
             } else {
                 System.out.println("Audio mancante: " + path);
             }
@@ -55,34 +55,29 @@ public class AudioManager {
         }
     }
 
-    // Riproduce un effetto sonoro
     public void playSound(String key) {
         if (isMuted) return;
         AudioClip clip = soundEffects.get(key);
         if (clip != null) {
-            // Imposta il volume basato sul volume globale (clip volume è 0.0-1.0)
-            // Possiamo alzare leggermente il volume degli effetti rispetto alla musica se necessario
             clip.setVolume(globalVolume); 
-            
-            // Per esplosioni, vogliamo sovrapposizione. Per cursori, magari no.
+            // Per esplosioni permettiamo sovrapposizione, per altri magari no
             if (key.equals("explosion") || !clip.isPlaying()) {
                 clip.play();
             }
         }
     }
 
-    // Avvia una traccia musicale in loop
     public void playMusic(String path) {
         if (isMuted) return;
-        stopMusic(); // Ferma la precedente
+        stopMusic(); // Ferma eventuale musica precedente
         
         try {
             URL url = getClass().getResource(path);
             if (url != null) {
                 Media media = new Media(url.toExternalForm());
                 musicPlayer = new MediaPlayer(media);
-                musicPlayer.setCycleCount(MediaPlayer.INDEFINITE); // Loop
-                musicPlayer.setVolume(globalVolume * 0.7); // Musica leggermente più bassa
+                musicPlayer.setCycleCount(MediaPlayer.INDEFINITE); // Loop infinito
+                musicPlayer.setVolume(globalVolume * 0.7); // Musica leggermente più bassa degli effetti
                 musicPlayer.play();
             } else {
                 System.out.println("Musica mancante: " + path);
@@ -111,10 +106,9 @@ public class AudioManager {
     // --- GESTIONE VOLUME ---
     
     public void setVolume(double volume) {
-        // Clamp tra 0.0 e 1.0
-        this.globalVolume = Math.max(0.0, Math.min(1.0, volume));
+        this.globalVolume = Math.max(0.0, Math.min(1.0, volume)); // Clamp tra 0 e 1
         
-        // Aggiorna musica in tempo reale
+        // Aggiorna volume musica in tempo reale
         if (musicPlayer != null) {
             musicPlayer.setVolume(globalVolume * 0.7);
         }
