@@ -76,18 +76,18 @@ public class MenuRenderer {
         gc.setTextAlign(TextAlignment.LEFT); 
     }
     
-   // --- DISEGNO SCHERMATA OPZIONI (VOLUME) ---
-   public void drawOptions(double volume, int selectedIndex) {
+ // --- SCHERMATA OPZIONI (VOLUME) ---
+ public void drawOptionsScreen(double volume, int selectedIndex) {
     gc.clearRect(0, 0, w, h);
     
-    // Sfondo Blu Scuro
+    // Sfondo Blu Scuro (lo stesso del main menu o più scuro)
     gc.setFill(Color.web("#00008B"));
     gc.fillRect(0, 0, w, h);
     
     gc.setTextAlign(TextAlignment.CENTER);
-    gc.setFont(Font.font("Monospaced", FontWeight.BOLD, 60));
     
     // Titolo
+    gc.setFont(Font.font("Monospaced", FontWeight.BOLD, 60));
     gc.setFill(Color.YELLOW);
     gc.fillText("OPTIONS", w/2, 150);
     
@@ -97,10 +97,10 @@ public class MenuRenderer {
     double barX = (w - barWidth) / 2;
     double barY = 350;
     
-    // Etichetta
+    // Etichetta Volume
     gc.setFont(Font.font("Monospaced", FontWeight.BOLD, 40));
     gc.setFill(selectedIndex == 0 ? Color.WHITE : Color.GRAY);
-    gc.fillText("VOLUME", w/2, barY - 20);
+    gc.fillText("VOLUME SFX", w/2, barY - 30);
     
     // Sfondo Barra (Nero)
     gc.setFill(Color.BLACK);
@@ -109,13 +109,13 @@ public class MenuRenderer {
     gc.setLineWidth(4);
     gc.strokeRect(barX, barY, barWidth, barHeight);
     
-    // Riempimento Barra (Verde)
+    // Riempimento Barra (Verde Lime)
     if (volume > 0) {
         gc.setFill(Color.LIME);
         gc.fillRect(barX + 4, barY + 4, (barWidth - 8) * volume, barHeight - 8);
     }
     
-    // Percentuale
+    // Testo Percentuale
     gc.setFill(Color.WHITE);
     gc.setFont(Font.font("Monospaced", 20));
     gc.fillText((int)(volume * 100) + "%", w/2, barY + barHeight + 30);
@@ -129,15 +129,16 @@ public class MenuRenderer {
     // --- CURSORE ---
     gc.setFill(Color.ORANGE);
     if (selectedIndex == 0) {
-        gc.fillText(">", barX - 50, barY + 30);
+        gc.fillText(">", barX - 50, barY + 30); // Accanto alla barra
+        gc.fillText("<", barX + barWidth + 50, barY + 30);
     } else {
-        gc.fillText(">", w/2 - 100, backY);
+        gc.fillText(">", w/2 - 100, backY); // Accanto a Back
     }
     
     gc.setTextAlign(TextAlignment.LEFT);
 }
 
-// --- Helper Grafici Menu Principale ---
+// --- Helper Grafici ---
 private void drawBackground(double cloudX) {
     gc.setFill(Color.web("#0000AA")); gc.fillRect(0,0,w,h/2);
     gc.setFill(Color.web("#4444FF")); gc.fillRect(0,h/2,w,h/2);

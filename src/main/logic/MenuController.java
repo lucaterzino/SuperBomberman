@@ -16,16 +16,17 @@ public class MenuController {
     private Gioco mainApp;
     private AnimationTimer menuLoop;
 
-    // Stati del menu
+    // Stati interni del menu
     private enum MenuState { MAIN, OPTIONS }
     private MenuState currentState = MenuState.MAIN;
 
-    // Main Menu
+    // Opzioni Principali
     private String[] options = {"NORMAL GAME", "OPTION", "EXIT"};
     private int selectedIndex = 0;
     
-    // Options Menu
-    private int optionIndex = 0; // 0 = Volume, 1 = Back
+    // Opzioni Schermata Options
+    // 0 = Slider Volume, 1 = Back
+    private int optionIndex = 0; 
     
     private double time = 0;
     private double cloudX = 0;
@@ -50,7 +51,10 @@ public class MenuController {
     
     public void startLoop() {
         if (menuLoop != null) menuLoop.start();
+        
+        // Avvia la musica del menu
         AudioManager.getInstance().playMusic("/audio/menu_theme.mp3");
+        
         draw();
         if (menuCanvas != null) menuCanvas.requestFocus();
     }
@@ -84,42 +88,44 @@ public class MenuController {
     }
     
     private void handleOptionInput(KeyCode code) {
+        // Navigazione Verticale (Volume <-> Back)
         if (code == KeyCode.UP || code == KeyCode.DOWN) {
-            optionIndex = (optionIndex == 0) ? 1 : 0; // Toggle tra Volume e Back
+            optionIndex = (optionIndex == 0) ? 1 : 0; 
             AudioManager.getInstance().playSound("cursor");
-        } else if (code == KeyCode.LEFT) {
-            if (optionIndex == 0) { // Abbassa volume
+        } 
+        // Regolazione Volume (Solo se siamo sulla riga 0)
+        else if (code == KeyCode.LEFT) {
+            if (optionIndex == 0) { 
                 double vol = AudioManager.getInstance().getVolume();
                 AudioManager.getInstance().setVolume(vol - 0.1);
-                AudioManager.getInstance().playSound("cursor");
+                AudioManager.getInstance().playSound("cursor"); // Feedback sonoro volume
             }
         } else if (code == KeyCode.RIGHT) {
-            if (optionIndex == 0) { // Alza volume
+            if (optionIndex == 0) { 
                 double vol = AudioManager.getInstance().getVolume();
                 AudioManager.getInstance().setVolume(vol + 0.1);
                 AudioManager.getInstance().playSound("cursor");
             }
-        } else if (code == KeyCode.ENTER || code == KeyCode.Z) {
-            if (optionIndex == 1) { // BACK
+        } 
+        // Selezione / Torna Indietro
+        else if (code == KeyCode.ENTER || code == KeyCode.Z || code == KeyCode.ESCAPE) {
+            if (optionIndex == 1 || code == KeyCode.ESCAPE) { // Back o ESC
                 currentState = MenuState.MAIN;
                 AudioManager.getInstance().playSound("confirm");
             }
-        } else if (code == KeyCode.ESCAPE) {
-            currentState = MenuState.MAIN;
-            AudioManager.getInstance().playSound("confirm");
         }
     }
 
     private void selectOption() {
         if (selectedIndex == 0) { // NORMAL GAME
             AudioManager.getInstance().playSound("confirm");
-            AudioManager.getInstance().stopMusic(); // Ferma musica menu
+            AudioManager.getInstance().stopMusic();
             if (mainApp != null) {
                 mainApp.showGameScreen();
             }
         } else if (selectedIndex == 1) { // OPTION
             currentState = MenuState.OPTIONS;
-            optionIndex = 0;
+            optionIndex = 0; // Reset selezione su Volume
             AudioManager.getInstance().playSound("confirm");
         } else if (selectedIndex == 2) { // EXIT
             System.exit(0);
@@ -137,7 +143,7 @@ public class MenuController {
             if (currentState == MenuState.MAIN) {
                 renderer.drawMenu(time, cloudX, options, selectedIndex);
             } else {
-                renderer.drawOptions(AudioManager.getInstance().getVolume(), optionIndex);
+                renderer.drawOptionsScreen(AudioManager.getInstance().getVolume(), optionIndex);
             }
         }
     }
