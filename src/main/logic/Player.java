@@ -22,9 +22,7 @@ public class Player {
     private int explosionRadius = 2; 
     private static final int ABSOLUTE_MAX_BOMBS = 5; 
     private static final double MAX_SPEED = 12.0; 
-    
-    private boolean hasKick = false;
-    private boolean hasPunch = false;
+
     private boolean hasRemote = false;
     
     private List<PowerUpType> activePowerUps = new ArrayList<>();

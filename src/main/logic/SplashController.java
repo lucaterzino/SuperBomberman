@@ -15,6 +15,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 import main.Gioco;
+import main.view.MenuRenderer; // Import needed to draw the Options screen
 import main.view.SplashRenderer;
 
 public class SplashController {
@@ -25,9 +26,10 @@ public class SplashController {
     @FXML private VBox loadingContainer;
     @FXML private Button playNowButton;
     @FXML private ProgressBar loadingBar;
-    @FXML private Canvas splashCanvas; // Iniettato da FXML
+    @FXML private Canvas splashCanvas; 
     
     private SplashRenderer renderer;
+    private MenuRenderer optionsRenderer; // Helper renderer for the options screen
     private AnimationTimer splashLoop;
 
     // Stati della Splash Screen
@@ -35,7 +37,8 @@ public class SplashController {
         WAITING,    // Aspetta il click su "PLAY NOW"
         LOADING,    // Barra di caricamento
         LOGO,       // Logo Hudson Soft
-        MENU        // Menu Principale del gioco
+        MENU,       // Menu Principale del gioco
+        OPTIONS     // Menu Opzioni
     }
     
     private SplashState currentState = SplashState.WAITING;
@@ -45,6 +48,9 @@ public class SplashController {
     private String[] options = {"NORMAL GAME", "OPTION", "EXIT"};
     private int selectedIndex = 0;
     
+    // Variabili Schermata Options (0 = Volume, 1 = Back)
+    private int optionIndex = 0; 
+
     // Variabili Animazione
     private double time = 0;
     private double cloudX = 0;
@@ -55,12 +61,12 @@ public class SplashController {
 
     @FXML
     public void initialize() {
-        // Usa il canvas iniettato dall'FXML
-        splashCanvas.toBack(); // Assicura che il canvas stia dietro ai bottoni inizialmente
+        splashCanvas.toBack(); 
 
+        // Initialize Renderers
         renderer = new SplashRenderer(splashCanvas.getGraphicsContext2D(), 1024, 768);
+        optionsRenderer = new MenuRenderer(splashCanvas.getGraphicsContext2D(), 1024, 768);
         
-        // Disegna lo sfondo iniziale
         renderer.drawBackground();
         
         splashLoop = new AnimationTimer() {
@@ -88,19 +94,17 @@ public class SplashController {
         loadingBar.setProgress(0);
         currentState = SplashState.LOADING;
 
-        // Animazione caricamento (3 secondi)
         Timeline timeline = new Timeline(
             new KeyFrame(Duration.ZERO, new KeyValue(loadingBar.progressProperty(), 0)),
             new KeyFrame(Duration.seconds(3), new KeyValue(loadingBar.progressProperty(), 1))
         );
         
         timeline.setOnFinished(e -> {
-            // Fine caricamento: nascondi UI e passa al logo
             loadingContainer.setVisible(false);
-            splashCanvas.toFront(); // Porta il canvas davanti per disegnare logo e menu
+            splashCanvas.toFront(); 
             splashCanvas.requestFocus(); 
             currentState = SplashState.LOGO;
-            stateTimer = 3.0; // Mostra logo per 3 secondi
+            stateTimer = 3.0; 
         });
         timeline.play();
     }
@@ -122,7 +126,6 @@ public class SplashController {
 
     private void draw() {
         if (currentState == SplashState.WAITING || currentState == SplashState.LOADING) {
-            // Durante l'attesa o il caricamento, ridisegna solo lo sfondo pulito dietro i controlli
             renderer.drawBackground();
         }
         else if (currentState == SplashState.LOGO) {
@@ -133,34 +136,80 @@ public class SplashController {
             renderer.clear();
             renderer.drawTitleScreen(time, cloudX, options, selectedIndex);
         }
+        else if (currentState == SplashState.OPTIONS) {
+            // Use MenuRenderer to draw options screen (since logic is identical)
+            optionsRenderer.drawOptionsScreen(AudioManager.getInstance().getVolume(), optionIndex);
+        }
     }
 
     public void handleKeyPressed(KeyEvent event) {
-        if (currentState != SplashState.MENU) return;
-
         KeyCode code = event.getCode();
         
+        if (currentState == SplashState.MENU) {
+            handleMainInput(code);
+        } else if (currentState == SplashState.OPTIONS) {
+            handleOptionsInput(code);
+        }
+    }
+    
+    // --- Input Logic Same as MenuController ---
+
+    private void handleMainInput(KeyCode code) {
         if (code == KeyCode.UP) {
             selectedIndex--;
             if (selectedIndex < 0) selectedIndex = options.length - 1;
+            AudioManager.getInstance().playSound("cursor");
         } else if (code == KeyCode.DOWN) {
             selectedIndex++;
             if (selectedIndex >= options.length) selectedIndex = 0;
+            AudioManager.getInstance().playSound("cursor");
         } else if (code == KeyCode.ENTER || code == KeyCode.SPACE || code == KeyCode.Z) {
             selectOption();
         }
     }
 
+    private void handleOptionsInput(KeyCode code) {
+        // Navigazione Verticale (Tra Volume e Back)
+        if (code == KeyCode.UP || code == KeyCode.DOWN) {
+            optionIndex = (optionIndex == 0) ? 1 : 0; 
+            AudioManager.getInstance().playSound("cursor");
+        } 
+        // Regolazione Volume
+        else if (code == KeyCode.LEFT) {
+            if (optionIndex == 0) { 
+                double vol = AudioManager.getInstance().getVolume();
+                AudioManager.getInstance().setVolume(vol - 0.1);
+                AudioManager.getInstance().playSound("cursor");
+            }
+        } else if (code == KeyCode.RIGHT) {
+            if (optionIndex == 0) { 
+                double vol = AudioManager.getInstance().getVolume();
+                AudioManager.getInstance().setVolume(vol + 0.1);
+                AudioManager.getInstance().playSound("cursor");
+            }
+        } 
+        // Torna Indietro
+        else if (code == KeyCode.ENTER || code == KeyCode.Z || code == KeyCode.ESCAPE) {
+            if (optionIndex == 1 || code == KeyCode.ESCAPE) { 
+                currentState = SplashState.MENU; // Back to Splash Menu
+                AudioManager.getInstance().playSound("confirm");
+            }
+        }
+    }
+
     private void selectOption() {
         if (selectedIndex == 0) { // NORMAL GAME
-            stopLoop();
+            AudioManager.getInstance().playSound("confirm");
+            AudioManager.getInstance().stopMusic(); // Stop menu/splash music
             if (mainApp != null) {
                 mainApp.showGameScreen();
             }
+        } else if (selectedIndex == 1) { // OPTION
+            currentState = SplashState.OPTIONS;
+            optionIndex = 0; // Reset selection to Volume
+            AudioManager.getInstance().playSound("confirm");
         } else if (selectedIndex == 2) { // EXIT
             System.exit(0);
-        } else {
-            System.out.println("Opzione non disponibile: " + options[selectedIndex]);
         }
     }
     

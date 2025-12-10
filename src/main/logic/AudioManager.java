@@ -37,9 +37,8 @@ public class AudioManager {
         loadClip("powerup", "/main/audio/powerup.wav");
         loadClip("death", "/main/audio/death.wav");
         loadClip("win", "/main/audio/win.wav");
-        loadClip("win", "/main/audio/lose.wav");
-        loadClip("spawn", "/main/audio/spawn.wav");
-        loadClip("objective", "/main/audio/objective.wav"); 
+        loadClip("lose", "/main/audio/lose.wav");
+        loadClip("respawn", "/main/audio/respawn.wav");
     }
 
     private void loadClip(String key, String path) {
@@ -74,6 +73,11 @@ public class AudioManager {
         
         try {
             URL url = getClass().getResource(path);
+
+            if (url == null && path.startsWith("/audio"))
+                {
+                    url = getClass().getResource("/main" + path); 
+                }
             if (url != null) {
                 Media media = new Media(url.toExternalForm());
                 musicPlayer = new MediaPlayer(media);
@@ -81,6 +85,10 @@ public class AudioManager {
                 musicPlayer.setVolume(globalVolume * 0.7); // Musica leggermente più bassa degli effetti
                 musicPlayer.play();
             } else {
+                URL test = getClass().getResource("/");
+                System.out.println("Root resource folder: " + test);
+                System.out.println(getClass().getResource("/main/audio/song_menu.mp3"));
+                System.out.println(getClass().getResource("/main/audio/song_gamplay.mp3"));
                 System.out.println("Musica mancante: " + path);
             }
         } catch (Exception e) {

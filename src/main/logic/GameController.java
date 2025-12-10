@@ -109,9 +109,7 @@ public class GameController {
 
     public void startGame() {
         // Avvia Musica
-        AudioManager.getInstance().playMusic("/audio/song_gamplay.mp3");
-        AudioManager.getInstance().playSound("spawn");
-
+        
         gameMap = new GameMap(MAP_COLUMNS, MAP_ROWS); 
         player = new Player(1, 1, (GameMap.TILE_SIZE - Player.SIZE) / 2.0); 
         spawnEnemies(MAP_COLUMNS, MAP_ROWS);
@@ -124,6 +122,7 @@ public class GameController {
         enemiesKilled = 0;
         timeLeft = 240.0; 
         currentState = GameState.PLAYING;
+        AudioManager.getInstance().playMusic("/audio/song_gamplay.mp3");
         lastFrameTime = System.nanoTime();
         gameLoop.start();
         gameCanvas.requestFocus(); 
@@ -386,22 +385,25 @@ public class GameController {
     private void handleDeath() {
         if (currentState != GameState.PLAYING) return; 
         lives--;
-        AudioManager.getInstance().playSound("death"); // SUONO MORTE
+        if(lives != 0) AudioManager.getInstance().playSound("death"); // SUONO MORTE
         if (lives > 0) {
             currentState = GameState.RESPAWNING;
             stateTimer = 3.0; 
+            
         } else {
             // --- MODIFICA: Se vite finite, GAME OVER con timer ---
             currentState = GameState.GAME_OVER;
+            AudioManager.getInstance().playSound("lose");
             stateTimer = 5.0;
   
         }
     }
     
     private void finishRespawn() {
+        AudioManager.getInstance().playSound("respawn"); // READY GO!
         double playerOffset = (GameMap.TILE_SIZE - Player.SIZE) / 2.0;
         player = new Player(1, 1, playerOffset);
-        AudioManager.getInstance().playSound("spawn"); // READY GO!
+        
         player.activateImmunity(60);
         for (Enemy enemy : enemies) enemy.resetPosition();
         bombs.clear();
