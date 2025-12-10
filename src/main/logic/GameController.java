@@ -109,8 +109,9 @@ public class GameController {
 
     public void startGame() {
         // Avvia Musica
-        //AudioManager.getInstance().playMusic("/audio/game_theme.mp3");
-        
+        AudioManager.getInstance().playMusic("/audio/song_gamplay.mp3");
+        AudioManager.getInstance().playSound("spawn");
+
         gameMap = new GameMap(MAP_COLUMNS, MAP_ROWS); 
         player = new Player(1, 1, (GameMap.TILE_SIZE - Player.SIZE) / 2.0); 
         spawnEnemies(MAP_COLUMNS, MAP_ROWS);
@@ -400,12 +401,12 @@ public class GameController {
     private void finishRespawn() {
         double playerOffset = (GameMap.TILE_SIZE - Player.SIZE) / 2.0;
         player = new Player(1, 1, playerOffset);
+        AudioManager.getInstance().playSound("spawn"); // READY GO!
         player.activateImmunity(60);
         for (Enemy enemy : enemies) enemy.resetPosition();
         bombs.clear();
         explosions.clear(); 
         currentState = GameState.PLAYING;
-        AudioManager.getInstance().playSound("spawn"); // READY GO!
     }
 
     private void checkObjectiveCollection() {

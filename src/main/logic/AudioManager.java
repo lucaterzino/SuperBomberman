@@ -39,6 +39,7 @@ public class AudioManager {
         loadClip("win", "/main/audio/win.wav");
         loadClip("win", "/main/audio/lose.wav");
         loadClip("spawn", "/main/audio/spawn.wav");
+        loadClip("objective", "/main/audio/objective.wav"); 
     }
 
     private void loadClip(String key, String path) {
