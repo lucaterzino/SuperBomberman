@@ -109,9 +109,8 @@ public class GameController {
 
     public void startGame() {
         // Avvia Musica
-        AudioManager.getInstance().playMusic("/audio/game_theme.mp3");
-        AudioManager.getInstance().playSound("spawn");
-
+        //AudioManager.getInstance().playMusic("/audio/game_theme.mp3");
+        
         gameMap = new GameMap(MAP_COLUMNS, MAP_ROWS); 
         player = new Player(1, 1, (GameMap.TILE_SIZE - Player.SIZE) / 2.0); 
         spawnEnemies(MAP_COLUMNS, MAP_ROWS);
@@ -127,6 +126,7 @@ public class GameController {
         lastFrameTime = System.nanoTime();
         gameLoop.start();
         gameCanvas.requestFocus(); 
+        
     }
 
     public void stopGame() {
@@ -248,7 +248,13 @@ public class GameController {
 
     private void draw() {
         renderer.clear();
-        if (currentState == GameState.RESPAWNING) { renderer.drawRespawnScreen(lives); return; }
+        if (currentState == GameState.RESPAWNING) 
+            { 
+                AudioManager.getInstance().playSound("spawn");
+                renderer.drawRespawnScreen(lives); 
+                return; 
+                
+            }
         if (currentState == GameState.VICTORY) { renderer.drawVictoryScreen(score, stateTimer); return; }
         if (currentState == GameState.GAME_OVER) { renderer.drawGameOverScreen(score, stateTimer); return; }
 
@@ -387,6 +393,7 @@ public class GameController {
             // --- MODIFICA: Se vite finite, GAME OVER con timer ---
             currentState = GameState.GAME_OVER;
             stateTimer = 5.0;
+  
         }
     }
     

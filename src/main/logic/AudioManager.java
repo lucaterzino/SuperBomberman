@@ -29,16 +29,16 @@ public class AudioManager {
     }
 
     private void loadSounds() {
-        // Carica effetti .wav (Bassa latenza)
-        // Assicurati che i file siano in src/audio/ o resources/audio/
-        loadClip("cursor", "/audio/cursor.wav");
-        loadClip("confirm", "/audio/confirm.wav");
-        loadClip("bomb_place", "/audio/bomb_place.wav");
-        loadClip("explosion", "/audio/explosion.wav");
-        loadClip("powerup", "/audio/powerup.wav");
-        loadClip("death", "/audio/death.wav");
-        loadClip("win", "/audio/win.wav");
-        loadClip("spawn", "/audio/spawn.wav");
+        // Carica effetti .wav 
+        loadClip("cursor", "/main/audio/cursor.wav");
+        loadClip("confirm", "/main/audio/confirm.wav");
+        loadClip("bomb_place", "/main/audio/bomb_place.wav");
+        loadClip("explosion", "/main/audio/explosion.wav");
+        loadClip("powerup", "/main/audio/powerup.wav");
+        loadClip("death", "/main/audio/death.wav");
+        loadClip("win", "/main/audio/win.wav");
+        loadClip("win", "/main/audio/lose.wav");
+        loadClip("spawn", "/main/audio/spawn.wav");
     }
 
     private void loadClip(String key, String path) {
