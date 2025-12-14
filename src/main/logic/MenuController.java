@@ -54,7 +54,7 @@ public class MenuController {
         if (menuLoop != null) menuLoop.start();
         
         // Avvia la musica del menu
-        AudioManager.getInstance().playMusic("/audio/song_menu.mp3");
+       // AudioManager.getInstance().playMusic("/audio/song_menu.mp3");
         
         draw(); 
         if (menuCanvas != null) menuCanvas.requestFocus();

@@ -385,7 +385,8 @@ public class GameController {
     private void handleDeath() {
         if (currentState != GameState.PLAYING) return; 
         lives--;
-        if(lives != 0) AudioManager.getInstance().playSound("death"); // SUONO MORTE
+        if(lives != 0)  AudioManager.getInstance().stopMusic(); // Ferma musica gioco
+        AudioManager.getInstance().playSound("death"); // SUONO MORTE
         if (lives > 0) {
             currentState = GameState.RESPAWNING;
             stateTimer = 3.0; 
@@ -393,6 +394,7 @@ public class GameController {
         } else {
             // --- MODIFICA: Se vite finite, GAME OVER con timer ---
             currentState = GameState.GAME_OVER;
+            AudioManager.getInstance().stopMusic(); // Ferma musica gioco
             AudioManager.getInstance().playSound("lose");
             stateTimer = 5.0;
   
@@ -403,6 +405,7 @@ public class GameController {
         AudioManager.getInstance().playSound("respawn"); // READY GO!
         double playerOffset = (GameMap.TILE_SIZE - Player.SIZE) / 2.0;
         player = new Player(1, 1, playerOffset);
+        AudioManager.getInstance().playMusic("/audio/song_gamplay.mp3");
         
         player.activateImmunity(60);
         for (Enemy enemy : enemies) enemy.resetPosition();

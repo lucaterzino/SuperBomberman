@@ -131,6 +131,7 @@ public class SplashController {
         else if (currentState == SplashState.LOGO) {
             renderer.clear();
             renderer.drawHudsonLogo();
+            AudioManager.getInstance().playMusic("/audio/song_menu.mp3");
         }
         else if (currentState == SplashState.MENU) {
             renderer.clear();

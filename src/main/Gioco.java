@@ -5,6 +5,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import main.logic.AudioManager;
 import main.logic.GameController;
 import main.logic.MenuController;
 import main.logic.SplashController;
@@ -90,8 +91,8 @@ public class Gioco extends Application {
         if (splashController != null) splashController.stopLoop();
         
         primaryStage.setScene(menuScene);
-        
-        // --- MODIFICA FONDAMENTALE ---
+        AudioManager.getInstance().playMusic("/audio/song_menu.mp3");
+                 // --- MODIFICA FONDAMENTALE ---
         // Riavvia il loop grafico del menu.
         // NON chiamare initialize(), usa il metodo dedicato startLoop()
         if (menuController != null) {

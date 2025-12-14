@@ -82,7 +82,7 @@ public class AudioManager {
                 Media media = new Media(url.toExternalForm());
                 musicPlayer = new MediaPlayer(media);
                 musicPlayer.setCycleCount(MediaPlayer.INDEFINITE); // Loop infinito
-                musicPlayer.setVolume(globalVolume * 0.7); // Musica leggermente più bassa degli effetti
+                musicPlayer.setVolume(globalVolume * 0.3); // Musica leggermente più bassa degli effetti
                 musicPlayer.play();
             } else {
                 URL test = getClass().getResource("/");
@@ -119,7 +119,7 @@ public class AudioManager {
         
         // Aggiorna volume musica in tempo reale
         if (musicPlayer != null) {
-            musicPlayer.setVolume(globalVolume * 0.7);
+            musicPlayer.setVolume(globalVolume * 0.3);
         }
     }
     
