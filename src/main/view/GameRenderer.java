@@ -64,7 +64,7 @@ public class GameRenderer {
         for (Enemy e : enemies) drawEnemy(e);
         for (Explosion e : explosions) drawExplosion(e);
         
-        drawPlayer(player);
+        drawPlayer(player); 
         gc.restore();
     }
 

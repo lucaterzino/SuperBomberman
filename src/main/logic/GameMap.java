@@ -8,9 +8,14 @@ public class GameMap {
     private int columns;
     private int rows;
 
-    public GameMap(int columns, int rows) {
+    // Parametro per la densità dei muri (0.25 = 25%, 0.40 = 40% ecc.)
+    private double wallDensity;
+
+    // Costruttore aggiornato
+    public GameMap(int columns, int rows, double wallDensity) {
         this.columns = columns;
         this.rows = rows;
+        this.wallDensity = wallDensity; // Salviamo la densità
         this.grid = new TileType[rows][columns];
         generateMap();
     }
@@ -21,10 +26,12 @@ public class GameMap {
             for (int c = 0; c < columns; c++) {
                 if (r == 0 || c == 0 || r == rows - 1 || c == columns - 1) grid[r][c] = TileType.WALL;
                 else if (r % 2 == 0 && c % 2 == 0) grid[r][c] = TileType.WALL;
-                else if ((r > 2 || c > 2) && (r < rows - 3 || c < columns - 3) && rand.nextDouble() < 0.25) grid[r][c] = TileType.BRICK;
+                // Usa la variabile wallDensity invece del valore fisso 0.25
+                else if ((r > 2 || c > 2) && (r < rows - 3 || c < columns - 3) && rand.nextDouble() < wallDensity) grid[r][c] = TileType.BRICK;
                 else grid[r][c] = TileType.EMPTY;
             }
         }
+        // Zona sicura iniziale
         grid[1][1] = TileType.EMPTY; grid[1][2] = TileType.EMPTY; grid[2][1] = TileType.EMPTY;
         if (columns > 3 && rows > 3) {
             grid[1][columns - 2] = TileType.EMPTY;
@@ -32,7 +39,6 @@ public class GameMap {
             grid[rows - 2][columns - 2] = TileType.EMPTY;
         }
     }
-
     public boolean isTileSolid(int col, int row) {
         if (row < 0 || row >= rows || col < 0 || col >= columns) return true;
         TileType type = grid[row][col];

@@ -21,7 +21,7 @@ public class MenuController {
     private MenuState currentState = MenuState.MAIN;
 
     // Opzioni Menu Principale
-    private String[] options = {"NORMAL GAME", "OPTION", "EXIT"};
+    private String[] options = {"START", "OPTION", "EXIT"};
     private int selectedIndex = 0;
     
     // Opzioni Schermata Options
@@ -120,11 +120,10 @@ public class MenuController {
     }
 
     private void selectOption() {
-        if (selectedIndex == 0) { // NORMAL GAME
+        if (selectedIndex == 0) { // START
             AudioManager.getInstance().playSound("confirm");
-            AudioManager.getInstance().stopMusic(); // Ferma musica menu
             if (mainApp != null) {
-                mainApp.showGameScreen();
+                mainApp.showLevelMapScreen();
             }
         } else if (selectedIndex == 1) { // OPTION
             currentState = MenuState.OPTIONS;

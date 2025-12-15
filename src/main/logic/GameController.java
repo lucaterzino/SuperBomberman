@@ -70,6 +70,10 @@ public class GameController {
     private int enemiesKilled = 0;
     private double timeLeft = 240.0; 
 
+    // NUOVA Variabile per tenere traccia del livello corrente
+    private int currentLevel = 1;
+    private int totalObjectivesForLevel = 3;
+
     private static class Coord {
         int x, y;
         Coord(int x, int y) { this.x = x; this.y = y; }
@@ -77,15 +81,12 @@ public class GameController {
 
     public void initialize() {
         renderer = new GameRenderer(gameCanvas.getGraphicsContext2D(), WINDOW_WIDTH, WINDOW_HEIGHT);
-        gameMap = new GameMap(MAP_COLUMNS, MAP_ROWS);
         this.dangerMap = new boolean[MAP_ROWS][MAP_COLUMNS];
 
         double playerOffset = (GameMap.TILE_SIZE - Player.SIZE) / 2.0;
         player = new Player(1, 1, playerOffset); 
 
         this.enemyOffset = (GameMap.TILE_SIZE - Enemy.SIZE) / 2.0;
-        spawnEnemies(MAP_COLUMNS, MAP_ROWS);
-        spawnObjectives(MAP_COLUMNS, MAP_ROWS);
 
         lastFrameTime = System.nanoTime();
         
@@ -109,25 +110,57 @@ public class GameController {
     }
 
 
-    public void startGame() {
-        // Avvia Musica
+    public void startLevel(int level) {
+        this.currentLevel = level;
         
-        gameMap = new GameMap(MAP_COLUMNS, MAP_ROWS); 
+        // Configurazioni in base al livello richiesto
+        int enemyCount = 3;
+        double wallDensity = 0.25; // Standard 25%
+        totalObjectivesForLevel = 3; // Default
+
+        switch (level) {
+            case 1:
+                enemyCount = 3;
+                wallDensity = 0.25;
+                totalObjectivesForLevel = 3;
+                System.out.println("Avvio Livello 1: Standard");
+                break;
+            case 2:
+                enemyCount = 4; // Più nemici
+                wallDensity = 0.35; // Più muri (35%)
+                totalObjectivesForLevel = 3;
+                System.out.println("Avvio Livello 2: Più Muri e Nemici");
+                break;
+            case 3:
+                enemyCount = 4;
+                wallDensity = 0.35;
+                totalObjectivesForLevel = 4; // Più obiettivi
+                System.out.println("Avvio Livello 3: Obiettivi Aumentati");
+                break;
+        }
+
+        // Creazione Mappa con densità variabile
+        gameMap = new GameMap(MAP_COLUMNS, MAP_ROWS, wallDensity); 
+        
         player = new Player(1, 1, (GameMap.TILE_SIZE - Player.SIZE) / 2.0); 
-        spawnEnemies(MAP_COLUMNS, MAP_ROWS);
-        spawnObjectives(MAP_COLUMNS, MAP_ROWS);
-        powerUps.clear(); 
-        bombs.clear();
-        explosions.clear(); 
-        lives = 3;
-        score = 0;
-        enemiesKilled = 0;
-        timeLeft = 240.0; 
-        currentState = GameState.PLAYING;
-        AudioManager.getInstance().playMusic("/audio/song_gamplay.mp3");
-        lastFrameTime = System.nanoTime();
-        gameLoop.start();
-        gameCanvas.requestFocus(); 
+        // Aggiorniamo il player con il target obiettivi corretto
+        player.setTotalObjectivesToWin(totalObjectivesForLevel);
+
+        spawnEnemies(enemyCount); // Metodo modificato sotto
+        spawnObjectives(MAP_COLUMNS, MAP_ROWS, totalObjectivesForLevel); // Metodo modificato sotto
+            powerUps.clear(); 
+            bombs.clear();
+            explosions.clear(); 
+            lives = 3;
+            score = 0;
+            enemiesKilled = 0;
+            timeLeft = 240.0; 
+            currentState = GameState.PLAYING;
+            
+            AudioManager.getInstance().playMusic("/audio/song_gamplay.mp3");
+            lastFrameTime = System.nanoTime();
+            gameLoop.start();
+            gameCanvas.requestFocus(); 
         
     }
 
@@ -289,22 +322,19 @@ public class GameController {
             return; 
         }
        
-        // --- MODIFICA: Gestione timer per Vittoria E Game Over ---
+        // GESTIONE TRANSIZIONE VITTORIA / GAME OVER
         if (currentState == GameState.VICTORY || currentState == GameState.GAME_OVER) {
             stateTimer -= deltaTime;
             if (stateTimer <= 0) {
-                if (mainApp != null) mainApp.showMenuScreen();
+                if (currentState == GameState.VICTORY) {
+                    // SE VINCE -> Diciamo al mainApp che il livello è completato
+                    if (mainApp != null) mainApp.levelCompleted(currentLevel);
+                } else {
+                    // SE PERDE -> Torna alla mappa o al menu
+                    if (mainApp != null) mainApp.showLevelSelectionScreen(); 
+                }
             }
             return;
-        }
-
-        timeLeft -= deltaTime;
-        
-        // --- MODIFICA: Se il tempo scade, GAME OVER immediato ---
-        if (timeLeft <= 0) {
-            timeLeft = 0;
-            currentState = GameState.GAME_OVER;
-            stateTimer = 5.0; // 5 secondi di schermata Game Over
         }
 
         updateDangerMap();
@@ -325,36 +355,49 @@ public class GameController {
         checkPlayerCollisions();
     }
 
-    private void spawnEnemies(int columns, int rows) {
+    private void spawnEnemies(int count) {
         enemies.clear(); 
-        if (columns > 2 && rows > 2) {
-            enemies.add(new Enemy(columns - 2, 1, enemyOffset)); 
-            enemies.add(new Enemy(1, rows - 2, enemyOffset));     
-            enemies.add(new Enemy(columns - 2, rows - 2, enemyOffset)); 
+        Random rand = new Random();
+        
+        // Posizioni fisse per i primi 3 nemici (come prima)
+        if (count >= 1) enemies.add(new Enemy(MAP_COLUMNS - 2, 1, enemyOffset)); 
+        if (count >= 2) enemies.add(new Enemy(1, MAP_ROWS - 2, enemyOffset));     
+        if (count >= 3) enemies.add(new Enemy(MAP_COLUMNS - 2, MAP_ROWS - 2, enemyOffset)); 
+        
+        // Se ce ne sono altri (Livello 2 e 3), li mettiamo in posizioni casuali sicure
+        for (int i = 3; i < count; i++) {
+            int r, c;
+            do {
+                r = rand.nextInt(MAP_ROWS);
+                c = rand.nextInt(MAP_COLUMNS);
+            } while (gameMap.isTileSolid(c, r) || (c < 4 && r < 4)); // Evita spawn vicino al player
+            enemies.add(new Enemy(c, r, enemyOffset));
         }
     }
     
-    private void spawnObjectives(int cols, int rows) {
-        objectives.clear();
-        List<Coord> emptyLocations = new ArrayList<>();
-        for (int r = 0; r < rows; r++) {
-            for (int c = 0; c < cols; c++) {
-                if (c == 1 && r == 1) continue; 
-                if (gameMap.getTile(c, r) == TileType.EMPTY) {
-                    emptyLocations.add(new Coord(c, r));
-                }
+   // --- MODIFICA spawnObjectives per accettare il numero ---
+   private void spawnObjectives(int cols, int rows, int amount) {
+    objectives.clear();
+    List<Coord> emptyLocations = new ArrayList<>();
+    for (int r = 0; r < rows; r++) {
+        for (int c = 0; c < cols; c++) {
+            if (c == 1 && r == 1) continue; 
+            if (gameMap.getTile(c, r) == TileType.EMPTY) {
+                emptyLocations.add(new Coord(c, r));
             }
         }
-        Random rand = new Random();
-        int objectivesToSpawn = 3;
-        if (emptyLocations.size() < objectivesToSpawn) objectivesToSpawn = emptyLocations.size();
-        for (int i = 0; i < objectivesToSpawn; i++) {
-            if (emptyLocations.isEmpty()) break;
-            int index = rand.nextInt(emptyLocations.size());
-            Coord p = emptyLocations.remove(index);
-            objectives.add(new Objective(p.x, p.y));
-        }
     }
+    Random rand = new Random();
+    int objectivesToSpawn = amount; // Usiamo il parametro passato
+    
+    if (emptyLocations.size() < objectivesToSpawn) objectivesToSpawn = emptyLocations.size();
+    for (int i = 0; i < objectivesToSpawn; i++) {
+        if (emptyLocations.isEmpty()) break;
+        int index = rand.nextInt(emptyLocations.size());
+        Coord p = emptyLocations.remove(index);
+        objectives.add(new Objective(p.x, p.y));
+    }
+}
 
 
     private void updateExplosions() {

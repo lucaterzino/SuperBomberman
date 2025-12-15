@@ -28,7 +28,8 @@ public class Player {
     private List<PowerUpType> activePowerUps = new ArrayList<>();
     private static final int MAX_TOTAL_POWERUPS = 2; 
     private int objectivesCollected = 0;
-    private static final int TOTAL_OBJECTIVES_TO_WIN = 3;
+    private int totalObjectivesToWin = 3;
+
 
     public Player(int startCol, int startRow, double offset) {
         this.col = startCol;
@@ -94,15 +95,19 @@ public class Player {
         }
     }
 
+    public void setTotalObjectivesToWin(int count) {
+        this.totalObjectivesToWin = count;
+    }
+
     public int getMaxBombs() { return maxBombs; }
     public int getExplosionRadius() { return explosionRadius; }
     public double getMoveSpeed() { return moveSpeed; }
     public boolean hasRemote() { return hasRemote; }
     public List<PowerUpType> getActivePowerUps() { return activePowerUps; }
     public int getObjectivesCollected() { return objectivesCollected; }
-    public int getTotalObjectivesToWin() { return TOTAL_OBJECTIVES_TO_WIN; }
+    public int getTotalObjectivesToWin() { return totalObjectivesToWin; }
     public void collectObjective() { objectivesCollected++; }
-    public boolean hasWon() { return objectivesCollected >= TOTAL_OBJECTIVES_TO_WIN; }
+    public boolean hasWon() { return objectivesCollected >= totalObjectivesToWin; }
     
     public double getX() { return x; }
     public double getY() { return y; }
