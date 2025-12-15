@@ -143,10 +143,14 @@ private void drawBackground(double cloudX) {
     gc.setFill(Color.web("#0000AA")); gc.fillRect(0,0,w,h/2);
     gc.setFill(Color.web("#4444FF")); gc.fillRect(0,h/2,w,h/2);
     gc.setFill(Color.WHITE); gc.setGlobalAlpha(0.7);
-    drawCloud(100 + cloudX, 100, 120); drawCloud(400 + cloudX, 50, 150); drawCloud(800 + cloudX, 120, 100);
-    drawCloud(100 + cloudX + w, 80, 130); drawCloud(400 + cloudX + w, 40, 160);
+    drawCloud(100 + cloudX, 100, 120); 
+    drawCloud(400 + cloudX, 50, 150); 
+    drawCloud(800 + cloudX, 120, 100);
+    drawCloud(100 + cloudX + w, 80, 130); 
+    drawCloud(400 + cloudX + w, 40, 160);
     gc.setGlobalAlpha(1.0);
-    gc.setFill(Color.web("#228B22")); gc.beginPath(); gc.moveTo(0, h); gc.lineTo(0, h - 100);
+    gc.setFill(Color.web("#228B22")); 
+    gc.beginPath(); gc.moveTo(0, h); gc.lineTo(0, h - 100);
     gc.lineTo(150, h - 200); gc.lineTo(300, h - 120); gc.lineTo(500, h - 250); 
     gc.lineTo(700, h - 150); gc.lineTo(900, h - 180); gc.lineTo(1024, h - 100); gc.lineTo(1024, h);
     gc.closePath(); gc.fill(); gc.setStroke(Color.web("#006400")); gc.setLineWidth(5); gc.stroke();
@@ -162,11 +166,19 @@ private void drawBackground(double cloudX) {
         gc.setTextAlign(TextAlignment.CENTER);
         
         // Ombra Bomba
-        gc.setFill(Color.BLACK); gc.fillOval(x - 130, y - 90, 260, 260);
+        gc.setFill(Color.BLACK); 
+        gc.fillOval(x - 130, y - 90, 260, 260);
+
         // Corpo Bomba
-        gc.setFill(Color.web("#4B0082")); gc.fillOval(x - 120, y - 80, 240, 240);
+        gc.setFill(Color.web("#4B0082")); 
+        gc.fillOval(x - 120, y - 80, 240, 240);
+
         // Riflesso
-        gc.setFill(Color.WHITE); gc.setGlobalAlpha(0.4); gc.fillOval(x - 80, y - 50, 80, 80); gc.setGlobalAlpha(1.0);
+        gc.setFill(Color.WHITE); 
+        gc.setGlobalAlpha(0.4); 
+        gc.fillOval(x - 80, y - 50, 80, 80); 
+        gc.setGlobalAlpha(1.0);
+
         // Miccia
         gc.setFill(Color.GRAY); gc.fillRect(x - 20, y - 100, 40, 30);
         
@@ -182,10 +194,16 @@ private void drawBackground(double cloudX) {
         
         // Testo "2"
         gc.setFont(Font.font("Impact", 160));
-        gc.setFill(Color.LIMEGREEN); gc.setStroke(Color.BLACK); gc.setLineWidth(4);
-        double numX = x + 380; double numY = y + 60;
-        gc.setFill(Color.BLACK); gc.fillText("2", numX + 10, numY + 10);
-        gc.setFill(Color.web("#32CD32")); gc.fillText("2", numX, numY); gc.strokeText("2", numX, numY);
+        gc.setFill(Color.LIMEGREEN); 
+        gc.setStroke(Color.BLACK); 
+        gc.setLineWidth(4);
+        double numX = x + 380; 
+        double numY = y + 60;
+        gc.setFill(Color.BLACK); 
+        gc.fillText("2", numX + 10, numY + 10);
+        gc.setFill(Color.web("#32CD32")); 
+        gc.fillText("2", numX, numY); 
+        gc.strokeText("2", numX, numY);
     }
 
     private void drawMenuOptions(double x, double y, String[] options, int selectedIndex) {
@@ -214,9 +232,16 @@ private void drawBackground(double cloudX) {
     
     private void drawCursor(double x, double y) {
         double size = 30;
-        gc.setFill(Color.WHITE); gc.fillRect(x, y - 15, size, size);
-        gc.setStroke(Color.BLACK); gc.setLineWidth(2); gc.strokeRect(x, y - 15, size, size);
-        gc.setFill(Color.BLACK); gc.fillRect(x + 8, y - 7, 4, 10); gc.fillRect(x + 18, y - 7, 4, 10);
-        gc.setFill(Color.MAGENTA); gc.fillRect(x + 10, y - 21, 10, 6); gc.strokeRect(x + 10, y - 21, 10, 6);
+        gc.setFill(Color.WHITE); 
+        gc.fillRect(x, y - 15, size, size);
+        gc.setStroke(Color.BLACK); 
+        gc.setLineWidth(2); 
+        gc.strokeRect(x, y - 15, size, size);
+        gc.setFill(Color.BLACK); 
+        gc.fillRect(x + 8, y - 7, 4, 10); 
+        gc.fillRect(x + 18, y - 7, 4, 10);
+        gc.setFill(Color.MAGENTA); 
+        gc.fillRect(x + 10, y - 21, 10, 6); 
+        gc.strokeRect(x + 10, y - 21, 10, 6);
     }
 }

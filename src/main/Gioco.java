@@ -5,11 +5,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-import main.logic.AudioManager;
-import main.logic.GameController;
-import main.logic.LevelMapController;
-import main.logic.MenuController;
-import main.logic.SplashController;
+import main.logic.*;
 
 import java.io.IOException;
 
@@ -19,13 +15,15 @@ public class Gioco extends Application {
     private Scene splashScene;
     private Scene menuScene;
     private Scene gameScene;
-    private Scene levelMapScene; // Nuova Scena
+    private Scene levelMapScene; 
+    private Scene endGameScene; 
     
     // Riferimenti ai controller per gestirne il ciclo di vita
     private GameController gameController; 
     private MenuController menuController;
     private SplashController splashController; 
-    private LevelMapController levelMapController; // Nuovo Controller
+    private LevelMapController levelMapController; 
+    private EndGameController endGameController;
 
     // Variabile per salvare i progressi
     private int maxUnlockedLevel = 1;
@@ -39,6 +37,7 @@ public class Gioco extends Application {
         loadMenuScene();
         loadLevelMapScene(); // Carica la Mappa
         loadGameScene();
+        loadEndGameScene();
 
         stage.setTitle("Super Bomberman 2D");
         
@@ -94,24 +93,6 @@ public class Gioco extends Application {
     // Vecchio metodo showGameScreen rimosso o reindirizzato (opzionale)
     public void showGameScreen() { showLevelMapScreen(); }
 
-    // --- NUOVO: Gestione Completamento Livello ---
-    public void levelCompleted(int levelJustFinished) {
-        // Se ho finito il livello 1, sblocco il 2. Se finito il 2, sblocco il 3.
-        if (levelJustFinished >= maxUnlockedLevel && maxUnlockedLevel < 3) {
-            maxUnlockedLevel++;
-        }
-        
-        // Se finito il livello 3 -> Schermata Finale? 
-        // Per ora torniamo alla mappa come richiesto, magari con un messaggio speciale in futuro.
-        if (levelJustFinished == 3) {
-            System.out.println("GIOCO COMPLETATO!");
-            // Qui potremmo chiamare una showEndScreen() in futuro
-        }
-
-        // Torna alla mappa
-        showLevelMapScreen();
-    }
-
     public void showLevelSelectionScreen() {
         // Usato in caso di Game Over per tornare alla selezione
         showLevelMapScreen();
@@ -143,6 +124,52 @@ public class Gioco extends Application {
         gameScene = new Scene(gameRoot);
         gameScene.setOnKeyPressed(event -> gameController.onKeyPressed(event.getCode()));
         gameScene.setOnKeyReleased(event -> gameController.onKeyReleased(event.getCode()));
+    }
+
+    private void loadEndGameScene() throws IOException {
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/main/view/end_game.fxml"));
+        Parent root = loader.load();
+        endGameController = loader.getController();
+        endGameController.setMainApp(this);
+        endGameScene = new Scene(root);
+    }
+
+    // --- NUOVO: Mostra Schermata Finale ---
+    public void showEndGameScreen() {
+        stopAllLoops();
+        primaryStage.setScene(endGameScene);
+        endGameController.startLoop();
+    }
+
+    // --- NUOVO: Reset Completo (chiamato dal controller EndGame) ---
+    public void resetGameAndShowMenu() {
+        // Resetta i progressi per una nuova partita
+        maxUnlockedLevel = 1; 
+        showMenuScreen();
+    }
+
+    public void levelCompleted(int levelJustFinished) {
+        // Logica di sblocco
+        if (levelJustFinished >= maxUnlockedLevel && maxUnlockedLevel < 3) {
+            maxUnlockedLevel++;
+        }
+        
+        // SE HO FINITO IL LIVELLO 3 -> FINE GIOCO
+        if (levelJustFinished == 3) {
+            showEndGameScreen();
+        } else {
+            // ALTRIMENTI -> TORNA ALLA MAPPA
+            showLevelMapScreen();
+        }
+    }
+
+    // Helper per pulire il codice
+    private void stopAllLoops() {
+        if (menuController != null) menuController.stopLoop();
+        if (gameController != null) gameController.stopGame();
+        if (splashController != null) splashController.stopLoop();
+        if (levelMapController != null) levelMapController.stopLoop();
+        if (endGameController != null) endGameController.stopLoop();
     }
 
     public static void main(String[] args) {
