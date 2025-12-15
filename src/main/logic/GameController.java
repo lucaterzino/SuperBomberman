@@ -28,6 +28,8 @@ public class GameController {
     
     private GameState currentState = GameState.PLAYING;
     private double stateTimer = 0; 
+    private PowerUpType lastCollectedPowerUp = null;
+    private double powerUpNotificationTimer = 0;
 
     private List<Bomb> bombs = new ArrayList<>();
     private List<Enemy> enemies = new ArrayList<>();
@@ -258,7 +260,7 @@ public class GameController {
         if (currentState == GameState.VICTORY) { renderer.drawVictoryScreen(score, stateTimer); return; }
         if (currentState == GameState.GAME_OVER) { renderer.drawGameOverScreen(score, stateTimer); return; }
 
-        renderer.drawHUD(lives, score, enemiesKilled, timeLeft, player.getActivePowerUps());
+        renderer.drawHUD(lives, score, enemiesKilled, timeLeft, player.getActivePowerUps(), lastCollectedPowerUp, powerUpNotificationTimer);
         renderer.drawGameScene(gameMap, player, enemies, bombs, explosions, powerUps, objectives, MAP_OFFSET_X, MAP_OFFSET_Y);
 
         if (currentState == GameState.PAUSED) {
@@ -269,6 +271,13 @@ public class GameController {
         }
     }
     private void update(double deltaTime) {
+
+        // Gestione timer notifica
+        if (powerUpNotificationTimer > 0) {
+            powerUpNotificationTimer -= deltaTime;
+            if (powerUpNotificationTimer <= 0) lastCollectedPowerUp = null;
+        }
+
         // BLOCCO: Se in Pausa o in Opzioni, il gioco è congelato
         if (currentState == GameState.PAUSED || currentState == GameState.OPTIONS) return;
 
@@ -279,7 +288,7 @@ public class GameController {
             }
             return; 
         }
-        
+       
         // --- MODIFICA: Gestione timer per Vittoria E Game Over ---
         if (currentState == GameState.VICTORY || currentState == GameState.GAME_OVER) {
             stateTimer -= deltaTime;
@@ -442,6 +451,10 @@ public class GameController {
                 if (collected) {
                     it.remove(); 
                     AudioManager.getInstance().playSound("powerup"); // DING!
+
+                    // NUOVO: Imposta notifica
+                    lastCollectedPowerUp = p.getType();
+                    powerUpNotificationTimer = 5.0; // Mostra per 2 secondi
                 }
             }
         }
