@@ -158,8 +158,32 @@ public class GameController {
             currentState = GameState.PLAYING;
             
             AudioManager.getInstance().playMusic("/audio/song_gamplay.mp3");
-            lastFrameTime = System.nanoTime();
-            gameLoop.start();
+           // --- FIX TIMER: Timer semplice e robusto ---
+           lastFrameTime = System.nanoTime();
+           if (gameLoop != null) gameLoop.stop();
+           
+           gameLoop = new AnimationTimer() {
+               // Target 60 FPS (1s / 60 = ~16.6ms)
+               private final long FRAME_DURATION = 16_666_666; 
+       
+               @Override
+               public void handle(long now) {
+                   long elapsedNano = now - lastFrameTime;
+       
+                   if (elapsedNano >= FRAME_DURATION) {
+                       // Calcolo preciso del delta in secondi
+                       double deltaSeconds = elapsedNano / 1_000_000_000.0;
+                       lastFrameTime = now;
+       
+                       // Limite di sicurezza (se lagga troppo, simuliamo max 0.1s)
+                       if (deltaSeconds > 0.1) deltaSeconds = 0.1;
+                       
+                       update(deltaSeconds);
+                       draw(); 
+                   }
+               }
+           };
+           gameLoop.start();
             gameCanvas.requestFocus(); 
         
     }
@@ -181,6 +205,7 @@ public class GameController {
         } else if (currentState == GameState.PAUSED) {
             currentState = GameState.PLAYING;
             AudioManager.getInstance().resumeMusic();
+            lastFrameTime = System.nanoTime(); // Reset timer per evitare salti
         }
     }
 
@@ -303,44 +328,42 @@ public class GameController {
             renderer.drawOptionsScreen(AudioManager.getInstance().getVolume(), optionIndex);
         }
     }
-    private void update(double deltaTime) {
 
-        // Gestione timer notifica
+    // ... METODO UPDATE AGGIORNATO ...
+    private void update(double deltaTime) {
+        if (currentState == GameState.PAUSED || currentState == GameState.OPTIONS) return;
+
         if (powerUpNotificationTimer > 0) {
             powerUpNotificationTimer -= deltaTime;
             if (powerUpNotificationTimer <= 0) lastCollectedPowerUp = null;
         }
 
-        // BLOCCO: Se in Pausa o in Opzioni, il gioco è congelato
-        if (currentState == GameState.PAUSED || currentState == GameState.OPTIONS) return;
-
         if (currentState == GameState.RESPAWNING) {
             stateTimer -= deltaTime;
-            if (stateTimer <= 0) {
-                finishRespawn();
-            }
+            if (stateTimer <= 0) finishRespawn();
             return; 
         }
-       
-        // GESTIONE TRANSIZIONE VITTORIA / GAME OVER
+    
         if (currentState == GameState.VICTORY || currentState == GameState.GAME_OVER) {
             stateTimer -= deltaTime;
             if (stateTimer <= 0) {
-                if (currentState == GameState.VICTORY) {
-                    // SE VINCE -> Diciamo al mainApp che il livello è completato
-                    if (mainApp != null) mainApp.levelCompleted(currentLevel);
-                } else {
-                    // SE PERDE -> Torna alla mappa o al menu
-                    if (mainApp != null) mainApp.showLevelSelectionScreen(); 
-                }
+                if (currentState == GameState.VICTORY) { if (mainApp != null) mainApp.levelCompleted(currentLevel); }
+                else { if (mainApp != null) mainApp.showLevelSelectionScreen(); }
             }
             return;
         }
 
+        timeLeft -= deltaTime;
+        if (timeLeft <= 0) {
+            timeLeft = 0;
+            currentState = GameState.GAME_OVER;
+            stateTimer = 5.0;
+        }
+
         updateDangerMap();
-        updateExplosions(); 
-        player.update();
-        updateBombs(); 
+        updateExplosions(deltaTime); // Passa delta
+        player.update(deltaTime);    // Passa delta
+        updateBombs(deltaTime);      // Passa delta
         
         for (Objective obj : objectives) obj.update();
         checkPowerUpCollection(); 
@@ -349,7 +372,8 @@ public class GameController {
         Iterator<Enemy> enemyIterator = enemies.iterator();
         while (enemyIterator.hasNext()) {
             Enemy enemy = enemyIterator.next();
-            enemy.update(gameMap, dangerMap, bombs, player); 
+            // Passa delta anche ai nemici
+            enemy.update(gameMap, dangerMap, bombs, player, deltaTime); 
         }
         
         checkPlayerCollisions();
@@ -375,39 +399,37 @@ public class GameController {
         }
     }
     
-   // --- MODIFICA spawnObjectives per accettare il numero ---
-   private void spawnObjectives(int cols, int rows, int amount) {
-    objectives.clear();
-    List<Coord> emptyLocations = new ArrayList<>();
-    for (int r = 0; r < rows; r++) {
-        for (int c = 0; c < cols; c++) {
-            if (c == 1 && r == 1) continue; 
-            if (gameMap.getTile(c, r) == TileType.EMPTY) {
-                emptyLocations.add(new Coord(c, r));
+    // --- MODIFICA spawnObjectives per accettare il numero ---
+    private void spawnObjectives(int cols, int rows, int amount) {
+        objectives.clear();
+        List<Coord> emptyLocations = new ArrayList<>();
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
+                if (c == 1 && r == 1) continue; 
+                if (gameMap.getTile(c, r) == TileType.EMPTY) {
+                    emptyLocations.add(new Coord(c, r));
+                }
             }
         }
+        Random rand = new Random();
+        int objectivesToSpawn = amount; // Usiamo il parametro passato
+        
+        if (emptyLocations.size() < objectivesToSpawn) objectivesToSpawn = emptyLocations.size();
+        for (int i = 0; i < objectivesToSpawn; i++) {
+            if (emptyLocations.isEmpty()) break;
+            int index = rand.nextInt(emptyLocations.size());
+            Coord p = emptyLocations.remove(index);
+            objectives.add(new Objective(p.x, p.y));
+        }
     }
-    Random rand = new Random();
-    int objectivesToSpawn = amount; // Usiamo il parametro passato
-    
-    if (emptyLocations.size() < objectivesToSpawn) objectivesToSpawn = emptyLocations.size();
-    for (int i = 0; i < objectivesToSpawn; i++) {
-        if (emptyLocations.isEmpty()) break;
-        int index = rand.nextInt(emptyLocations.size());
-        Coord p = emptyLocations.remove(index);
-        objectives.add(new Objective(p.x, p.y));
-    }
-}
 
 
-    private void updateExplosions() {
+    private void updateExplosions(double deltaTime) {
         Iterator<Explosion> it = explosions.iterator();
         while (it.hasNext()) {
             Explosion e = it.next();
-            e.update();
-            if (e.isFinished()) {
-                it.remove();
-            }
+            e.update(deltaTime); // Delta
+            if (e.isFinished()) it.remove();
         }
         checkFireCollisions();
     }
@@ -453,13 +475,15 @@ public class GameController {
         }
     }
     
-    private void finishRespawn() {
-        AudioManager.getInstance().playSound("respawn"); // READY GO!
-        double playerOffset = (GameMap.TILE_SIZE - Player.SIZE) / 2.0;
-        player = new Player(1, 1, playerOffset);
-        AudioManager.getInstance().playMusic("/audio/song_gamplay.mp3");
+   private void finishRespawn() {
+        AudioManager.getInstance().playSound("respawn"); 
         
-        player.activateImmunity(60);
+        // --- FIX RESPAWN: Usiamo resetAfterDeath invece di new Player() ---
+        // Questo mantiene il contatore delle perle (objectivesCollected)
+        player.resetAfterDeath(1, 1);
+        
+        AudioManager.getInstance().playMusic("/audio/song_gamplay.mp3");
+        player.activateImmunity(2.0); // 2 Secondi di immunità
         for (Enemy enemy : enemies) enemy.resetPosition();
         bombs.clear();
         explosions.clear(); 
@@ -528,18 +552,15 @@ public class GameController {
         return false;
     }
 
-    private void updateBombs() {
+ // AGGIORNARE ANCHE QUESTI METODI PER ACCETTARE DELTA TIME
+    private void updateBombs(double deltaTime) {
         Iterator<Bomb> iterator = bombs.iterator();
         while (iterator.hasNext()) {
             Bomb bomb = iterator.next();
-            bomb.update();
-            if (bomb.isExploded()) {
-                iterator.remove(); 
-                explodeBomb(bomb); 
-            }
+            bomb.update(deltaTime); // Delta
+            if (bomb.isExploded()) { iterator.remove(); explodeBomb(bomb); }
         }
     }
-
     private void explodeBomb(Bomb bomb) {
         int r = bomb.getRow();
         int c = bomb.getCol();

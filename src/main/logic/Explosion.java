@@ -1,9 +1,9 @@
 package main.logic;
 
 public class Explosion {
-    private static final int DURATION = 30; 
+    private static final double DURATION = 1.0; // 1 Secondo
     private int col, row;
-    private int timer;
+    private double timer;
 
     public Explosion(int col, int row) {
         this.col = col;
@@ -11,9 +11,11 @@ public class Explosion {
         this.timer = DURATION;
     }
 
-    public void update() { timer--; }
+    public void update(double deltaTime) { timer -= deltaTime; }
     public boolean isFinished() { return timer <= 0; }
     public int getCol() { return col; }
     public int getRow() { return row; }
-    public int getTimer() { return timer; }
+    
+    // Per il renderer
+    public int getTimer() { return (int)(timer * 30); }
 }

@@ -2,6 +2,9 @@ package main.view;
 
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.CycleMethod;
+import javafx.scene.paint.LinearGradient;
+import javafx.scene.paint.Stop;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.TextAlignment;
@@ -11,97 +14,182 @@ public class LevelMapRenderer {
     private double w, h;
 
     public LevelMapRenderer(GraphicsContext gc, double w, double h) {
-        this.gc = gc; this.w = w; this.h = h;
+        this.gc = gc;
+        this.w = w;
+        this.h = h;
     }
 
     public void drawMap(int selectedLevelIndex, int maxUnlockedLevel) {
-        gc.clearRect(0, 0, w, h);
+        // 1. DISEGNA SFONDO (Cielo)
+        drawSkyBackground();
+
+        // Coordinate dei 3 livelli (disposti a triangolo)
+        double x1 = w * 0.5;     double y1 = h * 0.3;   // Livello 1 (Alto)
+        double x2 = w * 0.25;    double y2 = h * 0.65;  // Livello 2 (Basso Sx)
+        double x3 = w * 0.75;    double y3 = h * 0.65;  // Livello 3 (Basso Dx)
         
-        // Sfondo Mappa (Verde scuro / Terreno)
-        gc.setFill(Color.web("#228B22")); 
-        gc.fillRect(0, 0, w, h);
-        
-        // Titolo
-        gc.setFill(Color.WHITE);
-        gc.setFont(Font.font("Monospaced", FontWeight.BOLD, 50));
-        gc.setTextAlign(TextAlignment.CENTER);
-        gc.fillText("SELECT LEVEL", w/2, 100);
+        double[][] positions = { {x1, y1}, {x2, y2}, {x3, y3} };
 
-        // Coordinate dei 3 livelli (disposti a triangolo o linea)
-        double[][] positions = {
-            {w/2, 300},      // Livello 1 (Alto)
-            {w/2 - 200, 500},// Livello 2 (Sinistra)
-            {w/2 + 200, 500} // Livello 3 (Destra)
-        };
+        // 2. DISEGNA I PONTI/SENTIERI (Dietro le isole)
+        drawPaths(positions, maxUnlockedLevel);
 
-        // Disegna percorsi (Linee tratteggiate)
-        gc.setStroke(Color.web("#DEB887")); // Color sabbia
-        gc.setLineWidth(8);
-        gc.setLineDashes(15);
-        if (maxUnlockedLevel >= 2) gc.strokeLine(positions[0][0], positions[0][1], positions[1][0], positions[1][1]);
-        if (maxUnlockedLevel >= 3) gc.strokeLine(positions[1][0], positions[1][1], positions[2][0], positions[2][1]);
-        gc.setLineDashes(null); // Reset
+        // 3. DISEGNA LE ISOLE FLUTTUANTI
+        drawFloatingIsland(x1, y1);
+        drawFloatingIsland(x2, y2);
+        drawFloatingIsland(x3, y3);
 
-        // Disegna i nodi dei livelli
+        // 4. DISEGNA I NODI DEI LIVELLI (Sopra le isole)
         for (int i = 0; i < 3; i++) {
             boolean isLocked = (i + 1) > maxUnlockedLevel;
             boolean isSelected = (i == selectedLevelIndex);
             
-            drawLevelNode(positions[i][0], positions[i][1], i + 1, isLocked, isSelected);
+            // Colori specifici per ogni livello
+            Color levelColor = Color.LIMEGREEN; 
+            if (i == 1) levelColor = Color.ORANGE;
+            if (i == 2) levelColor = Color.RED;
+            
+            drawLevelNode(positions[i][0], positions[i][1] - 20, i + 1, isLocked, isSelected, levelColor);
         }
-        
-        // Istruzioni
-        gc.setFill(Color.YELLOW);
-        gc.setFont(Font.font("Arial", 20));
-        gc.fillText("Use ARROW KEYS to select, ENTER to start", w/2, h - 50);
-        gc.fillText("Press ESC to return to Title Screen", w/2, h - 20);
+
+        // 5. Interfaccia Utente
+        drawUI();
     }
 
-    private void drawLevelNode(double x, double y, int levelNum, boolean isLocked, boolean isSelected) {
-        double radius = 60;
+    private void drawSkyBackground() {
+        // Gradiente Cielo (Azzurro -> Blu scuro)
+        LinearGradient skyGrad = new LinearGradient(0, 0, 0, h, false, CycleMethod.NO_CYCLE,
+                new Stop(0, Color.web("#87CEEB")), // SkyBlue
+                new Stop(1, Color.web("#4682B4"))); // SteelBlue
+        gc.setFill(skyGrad);
+        gc.fillRect(0, 0, w, h);
         
-        // Cerchio esterno (Bordo)
+        // Nuvole decorative (Ellissi semi-trasparenti)
+        gc.setFill(Color.web("#FFFFFF", 0.6));
+        gc.fillOval(100, 100, 150, 60);
+        gc.fillOval(800, 150, 180, 70);
+        gc.fillOval(400, 500, 200, 80);
+        gc.fillOval(150, 600, 120, 50);
+        
+        // Montagne in lontananza (Triangoli alla base)
+        gc.setFill(Color.web("#2F4F4F")); // DarkSlateGray
+        gc.fillPolygon(new double[]{0, 200, 400}, new double[]{h, h-200, h}, 3);
+        gc.fillPolygon(new double[]{300, 600, 900}, new double[]{h, h-300, h}, 3);
+        gc.fillPolygon(new double[]{700, 900, 1200}, new double[]{h, h-250, h}, 3);
+    }
+
+    private void drawFloatingIsland(double x, double y) {
+        double width = 160;
+        double height = 100;
+        
+        // Parte inferiore (Terra/Roccia) - Più scura per dare profondità
+        gc.setFill(Color.web("#8B4513")); // SaddleBrown
+        // Disegniamo un cono rovesciato irregolare
+        gc.fillPolygon(
+            new double[]{x - width/2 + 20, x + width/2 - 20, x}, 
+            new double[]{y, y, y + height}, 
+            3
+        );
+        
+        // Strato intermedio terra
+        gc.fillOval(x - width/2, y - 20, width, 60);
+
+        // Parte superiore (Erba)
+        gc.setFill(Color.web("#32CD32")); // LimeGreen
+        gc.fillOval(x - width/2 - 5, y - 30, width + 10, 50);
+        
+        // Bordo erba
+        gc.setStroke(Color.web("#228B22")); // ForestGreen
+        gc.setLineWidth(3);
+        gc.strokeOval(x - width/2 - 5, y - 30, width + 10, 50);
+    }
+
+    private void drawPaths(double[][] pos, int maxUnlocked) {
+        gc.setStroke(Color.WHITE);
+        gc.setLineWidth(6);
+        gc.setLineDashes(15, 10); // Tratteggio
+
+        // Coordinate aggiustate per partire dal centro delle isole
+        // Percorso 1 -> 2
+        if (maxUnlocked >= 1) gc.strokeLine(pos[0][0], pos[0][1], pos[1][0], pos[1][1]);
+        // Percorso 2 -> 3
+        if (maxUnlocked >= 2) gc.strokeLine(pos[1][0], pos[1][1], pos[2][0], pos[2][1]);
+        
+        gc.setLineDashes(null); // Reset
+    }
+
+    private void drawLevelNode(double x, double y, int levelNum, boolean isLocked, boolean isSelected, Color color) {
+        double radius = 40; 
+
+        // SELETTORE (Cerchio pulsante esterno)
         if (isSelected) {
             gc.setStroke(Color.CYAN);
-            gc.setLineWidth(6);
-            // Effetto pulsante se selezionato
-            gc.strokeOval(x - radius - 5, y - radius - 5, radius * 2 + 10, radius * 2 + 10);
+            gc.setLineWidth(5);
+            gc.strokeOval(x - radius - 10, y - radius - 10, (radius + 10) * 2, (radius + 10) * 2);
         }
 
-        // Riempimento
+        // SFONDO NODO
         if (isLocked) {
             gc.setFill(Color.GRAY);
         } else {
-            // Colori diversi per livello
-            if (levelNum == 1) gc.setFill(Color.LIMEGREEN);
-            else if (levelNum == 2) gc.setFill(Color.ORANGE);
-            else gc.setFill(Color.RED);
+            // Gradiente leggero per effetto bottone 3D
+            LinearGradient btnGrad = new LinearGradient(0, 0, 1, 1, true, CycleMethod.NO_CYCLE,
+                new Stop(0, color.brighter()), new Stop(1, color.darker()));
+            gc.setFill(btnGrad);
         }
+
+        // Cerchio Principale
         gc.fillOval(x - radius, y - radius, radius * 2, radius * 2);
         
-        // Bordo interno
-        gc.setStroke(Color.BLACK);
-        gc.setLineWidth(3);
+        // Bordo Bianco
+        gc.setStroke(Color.WHITE);
+        gc.setLineWidth(4);
         gc.strokeOval(x - radius, y - radius, radius * 2, radius * 2);
 
-        // Contenuto (Numero o Lucchetto)
+        // CONTENUTO (Numero o Lucchetto)
         gc.setFill(Color.WHITE);
         gc.setTextAlign(TextAlignment.CENTER);
         
         if (isLocked) {
-            // Disegno Lucchetto stilizzato
-            gc.fillRect(x - 15, y, 30, 25); // Corpo
-            gc.setStroke(Color.WHITE); gc.setLineWidth(4);
+            // Lucchetto stilizzato
+            gc.fillRect(x - 12, y - 5, 24, 20); // Corpo
+            gc.setStroke(Color.WHITE); gc.setLineWidth(3);
             gc.strokeArc(x - 10, y - 20, 20, 30, 0, 180, javafx.scene.shape.ArcType.OPEN);
         } else {
             // Numero Livello
-            gc.setFont(Font.font("Impact", 60));
-            gc.fillText(String.valueOf(levelNum), x, y + 20);
+            gc.setFont(Font.font("Impact", FontWeight.BOLD, 50));
+            // Ombra testo
+            gc.setFill(Color.rgb(0,0,0,0.3));
+            gc.fillText(String.valueOf(levelNum), x + 3, y + 20);
+            // Testo vero
+            gc.setFill(Color.WHITE);
+            gc.fillText(String.valueOf(levelNum), x, y + 18);
         }
         
-        // Etichetta sotto
-        gc.setFont(Font.font("Monospaced", FontWeight.BOLD, 20));
+        // ETICHETTA (Solo se selezionato)
+        if (isSelected) {
+            gc.setFont(Font.font("Arial Black", FontWeight.BOLD, 18));
+            gc.setStroke(Color.BLACK); gc.setLineWidth(3);
+            gc.setFill(Color.YELLOW);
+            
+            String label = "LEVEL " + levelNum;
+            gc.strokeText(label, x, y + radius + 40);
+            gc.fillText(label, x, y + radius + 40);
+        }
+    }
+
+    private void drawUI() {
+        // Titolo "WORLD MAP"
+        gc.setFont(Font.font("Impact", FontWeight.BOLD, 60));
+        gc.setFill(Color.GOLD); 
+        gc.setStroke(Color.BLACK); 
+        gc.setLineWidth(3);
+        
+        gc.strokeText("WORLD MAP", w/2, 80);
+        gc.fillText("WORLD MAP", w/2, 80);
+
+        // Istruzioni in basso
+        gc.setFont(Font.font("Monospaced", FontWeight.BOLD, 18));
         gc.setFill(Color.WHITE);
-        gc.fillText("LEVEL " + levelNum, x, y + radius + 30);
+        gc.fillText("[ ARROWS ] Move    [ ENTER ] Select    [ ESC ] Back", w/2, h - 30);
     }
 }

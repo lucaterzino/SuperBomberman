@@ -45,7 +45,7 @@ public class SplashController {
     private double stateTimer = 0;
     
     // Variabili Menu
-    private String[] options = {"NORMAL GAME", "OPTION", "EXIT"};
+    private String[] options = {"START", "OPTION", "EXIT"};
     private int selectedIndex = 0;
     
     // Variabili Schermata Options (0 = Volume, 1 = Back)
@@ -201,7 +201,6 @@ public class SplashController {
     private void selectOption() {
         if (selectedIndex == 0) { // NORMAL GAME
             AudioManager.getInstance().playSound("confirm");
-            AudioManager.getInstance().stopMusic(); // Stop menu/splash music
             if (mainApp != null) {
                 mainApp.showGameScreen();
             }
