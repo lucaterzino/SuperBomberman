@@ -7,10 +7,7 @@ import javafx.scene.input.KeyCode;
 import main.Gioco;
 import main.view.GameRenderer;
 
-import java.util.ArrayList; 
-import java.util.Iterator; 
-import java.util.List; 
-import java.util.Random;
+import java.util.*;
 
 public class GameController {
 
@@ -37,6 +34,10 @@ public class GameController {
     private List<Objective> objectives = new ArrayList<>(); 
     private List<Explosion> explosions = new ArrayList<>();
     
+    // NUOVO: Mappa per gestire i power-up nascosti nei mattoni
+    // La chiave è un intero calcolato come: (row * 1000) + col
+    private Map<Integer, PowerUpType> hiddenPowerUps = new HashMap<>();
+
     private boolean bombKeyPressed = false; 
     private boolean remoteKeyPressed = false; 
     
@@ -70,7 +71,7 @@ public class GameController {
     private int enemiesKilled = 0;
     private double timeLeft = 240.0; 
 
-    // NUOVA Variabile per tenere traccia del livello corrente
+    // Variabile per tenere traccia del livello corrente
     private int currentLevel = 1;
     private int totalObjectivesForLevel = 3;
 
@@ -109,14 +110,13 @@ public class GameController {
         this.mainApp = mainApp; 
     }
 
-
     public void startLevel(int level) {
         this.currentLevel = level;
         
         // Configurazioni in base al livello richiesto
         int enemyCount = 3;
-        double wallDensity = 0.25; // Standard 25%
-        totalObjectivesForLevel = 3; // Default
+        double wallDensity = 0.25; 
+        totalObjectivesForLevel = 3; 
 
         switch (level) {
             case 1:
@@ -126,66 +126,101 @@ public class GameController {
                 System.out.println("Avvio Livello 1: Standard");
                 break;
             case 2:
-                enemyCount = 4; // Più nemici
-                wallDensity = 0.35; // Più muri (35%)
+                enemyCount = 4; 
+                wallDensity = 0.35; 
                 totalObjectivesForLevel = 3;
                 System.out.println("Avvio Livello 2: Più Muri e Nemici");
                 break;
             case 3:
                 enemyCount = 4;
                 wallDensity = 0.35;
-                totalObjectivesForLevel = 4; // Più obiettivi
+                totalObjectivesForLevel = 4; 
                 System.out.println("Avvio Livello 3: Obiettivi Aumentati");
                 break;
         }
 
-        // Creazione Mappa con densità variabile
+        // Creazione Mappa
         gameMap = new GameMap(MAP_COLUMNS, MAP_ROWS, wallDensity); 
         
         player = new Player(1, 1, (GameMap.TILE_SIZE - Player.SIZE) / 2.0); 
-        // Aggiorniamo il player con il target obiettivi corretto
         player.setTotalObjectivesToWin(totalObjectivesForLevel);
 
-        spawnEnemies(enemyCount); // Metodo modificato sotto
-        spawnObjectives(MAP_COLUMNS, MAP_ROWS, totalObjectivesForLevel); // Metodo modificato sotto
-            powerUps.clear(); 
-            bombs.clear();
-            explosions.clear(); 
-            lives = 3;
-            score = 0;
-            enemiesKilled = 0;
-            timeLeft = 240.0; 
-            currentState = GameState.PLAYING;
-            
-            AudioManager.getInstance().playMusic("/audio/song_gamplay.mp3");
-           // --- FIX TIMER: Timer semplice e robusto ---
-           lastFrameTime = System.nanoTime();
-           if (gameLoop != null) gameLoop.stop();
-           
-           gameLoop = new AnimationTimer() {
-               // Target 60 FPS (1s / 60 = ~16.6ms)
-               private final long FRAME_DURATION = 16_666_666; 
-       
-               @Override
-               public void handle(long now) {
-                   long elapsedNano = now - lastFrameTime;
-       
-                   if (elapsedNano >= FRAME_DURATION) {
-                       // Calcolo preciso del delta in secondi
-                       double deltaSeconds = elapsedNano / 1_000_000_000.0;
-                       lastFrameTime = now;
-       
-                       // Limite di sicurezza (se lagga troppo, simuliamo max 0.1s)
-                       if (deltaSeconds > 0.1) deltaSeconds = 0.1;
-                       
-                       update(deltaSeconds);
-                       draw(); 
-                   }
-               }
-           };
-           gameLoop.start();
-            gameCanvas.requestFocus(); 
+        spawnEnemies(enemyCount); 
+        spawnObjectives(MAP_COLUMNS, MAP_ROWS, totalObjectivesForLevel);
         
+        // --- NUOVO: Generazione Deterministica dei PowerUp ---
+        distributePowerUps();
+
+        powerUps.clear(); 
+        bombs.clear();
+        explosions.clear(); 
+        lives = 3;
+        score = 0;
+        enemiesKilled = 0;
+        timeLeft = 240.0; 
+        currentState = GameState.PLAYING;
+            
+        AudioManager.getInstance().playMusic("/audio/song_gamplay.mp3");
+           
+        lastFrameTime = System.nanoTime();
+        if (gameLoop != null) gameLoop.stop();
+           
+        gameLoop = new AnimationTimer() {
+            private final long FRAME_DURATION = 16_666_666; 
+       
+            @Override
+            public void handle(long now) {
+                long elapsedNano = now - lastFrameTime;
+       
+                if (elapsedNano >= FRAME_DURATION) {
+                    double deltaSeconds = elapsedNano / 1_000_000_000.0;
+                    lastFrameTime = now;
+       
+                    if (deltaSeconds > 0.1) deltaSeconds = 0.1;
+                       
+                    update(deltaSeconds);
+                    draw(); 
+                }
+            }
+        };
+        gameLoop.start();
+        gameCanvas.requestFocus(); 
+    }
+
+    // --- NUOVO METODO: Distribuzione PowerUp ---
+    private void distributePowerUps() {
+        hiddenPowerUps.clear();
+
+        // 1. Trova tutte le posizioni dei mattoni (BRICK)
+        List<Integer> brickPositions = new ArrayList<>();
+        for (int r = 0; r < MAP_ROWS; r++) {
+            for (int c = 0; c < MAP_COLUMNS; c++) {
+                if (gameMap.getTile(c, r) == TileType.BRICK) {
+                    brickPositions.add(r * 1000 + c); // Chiave univoca
+                }
+            }
+        }
+
+        // Se ci sono meno di 2 mattoni, non possiamo spawnare 2 powerup (caso limite raro)
+        if (brickPositions.size() < 2) return;
+
+        // 2. Mescola le posizioni e prendine 2
+        Collections.shuffle(brickPositions);
+        int pos1 = brickPositions.get(0);
+        int pos2 = brickPositions.get(1);
+
+        // 3. Seleziona 2 Tipi di PowerUp DIVERSI
+        List<PowerUpType> types = new ArrayList<>(Arrays.asList(PowerUpType.values()));
+        Collections.shuffle(types);
+        
+        PowerUpType type1 = types.get(0);
+        PowerUpType type2 = types.get(1); // Sicuramente diverso dal primo grazie allo shuffle
+
+        // 4. Salva nella mappa dei powerup nascosti
+        hiddenPowerUps.put(pos1, type1);
+        hiddenPowerUps.put(pos2, type2);
+
+        System.out.println("PowerUp Nascosti: " + type1 + " a (" + (pos1%1000) + "," + (pos1/1000) + ") e " + type2 + " a (" + (pos2%1000) + "," + (pos2/1000) + ")");
     }
 
     public void stopGame() {
@@ -196,7 +231,6 @@ public class GameController {
         objectives.clear();
         explosions.clear();
     }
-
     
     private void togglePause() {
         if (currentState == GameState.PLAYING) {
@@ -205,18 +239,15 @@ public class GameController {
         } else if (currentState == GameState.PAUSED) {
             currentState = GameState.PLAYING;
             AudioManager.getInstance().resumeMusic();
-            lastFrameTime = System.nanoTime(); // Reset timer per evitare salti
+            lastFrameTime = System.nanoTime(); 
         }
     }
 
     public void onKeyPressed(KeyCode code) {
         if (code == KeyCode.ESCAPE) {
-            if (currentState == GameState.PLAYING) 
-                { togglePause(); return; }
-            if (currentState == GameState.PAUSED) 
-                { togglePause(); return; }
-            if (currentState == GameState.OPTIONS) 
-                { currentState = GameState.PAUSED; return; } // Torna al menu pausa
+            if (currentState == GameState.PLAYING) { togglePause(); return; }
+            if (currentState == GameState.PAUSED) { togglePause(); return; }
+            if (currentState == GameState.OPTIONS) { currentState = GameState.PAUSED; return; }
             if (currentState == GameState.GAME_OVER || currentState == GameState.VICTORY) 
                 if (mainApp != null) mainApp.showMenuScreen();
             return;
@@ -304,17 +335,13 @@ public class GameController {
         if (code == KeyCode.X) remoteKeyPressed = false;
     }
     
-
-
     private void draw() {
         renderer.clear();
-        if (currentState == GameState.RESPAWNING) 
-            { 
-                AudioManager.getInstance().playSound("spawn");
-                renderer.drawRespawnScreen(lives); 
-                return; 
-                
-            }
+        if (currentState == GameState.RESPAWNING) { 
+            // Mostra comunque l'HUD durante il respawn se vuoi vedere il timer scorrere
+            renderer.drawRespawnScreen(lives); 
+            return; 
+        }
         if (currentState == GameState.VICTORY) { renderer.drawVictoryScreen(score, stateTimer); return; }
         if (currentState == GameState.GAME_OVER) { renderer.drawGameOverScreen(score, stateTimer); return; }
 
@@ -324,14 +351,23 @@ public class GameController {
         if (currentState == GameState.PAUSED) {
             renderer.drawPauseMenu(pauseOptions, pauseIndex);
         } else if (currentState == GameState.OPTIONS) {
-           // Disegna il menu opzioni sopra il gioco in pausa
             renderer.drawOptionsScreen(AudioManager.getInstance().getVolume(), optionIndex);
         }
     }
 
-    // ... METODO UPDATE AGGIORNATO ...
     private void update(double deltaTime) {
         if (currentState == GameState.PAUSED || currentState == GameState.OPTIONS) return;
+
+        // --- MODIFICA TIMER: Aggiornamento SPOSTATO QUI ---
+        // Il timer scorre SEMPRE, tranne in pausa/opzioni, vittoria o game over completati
+        if (currentState != GameState.VICTORY && currentState != GameState.GAME_OVER) {
+            timeLeft -= deltaTime;
+            if (timeLeft <= 0) {
+                timeLeft = 0;
+                currentState = GameState.GAME_OVER;
+                stateTimer = 5.0;
+            }
+        }
 
         if (powerUpNotificationTimer > 0) {
             powerUpNotificationTimer -= deltaTime;
@@ -341,6 +377,7 @@ public class GameController {
         if (currentState == GameState.RESPAWNING) {
             stateTimer -= deltaTime;
             if (stateTimer <= 0) finishRespawn();
+            // Durante il respawn NON facciamo l'update di nemici e player, ma il timer sopra scorre.
             return; 
         }
     
@@ -353,17 +390,10 @@ public class GameController {
             return;
         }
 
-        timeLeft -= deltaTime;
-        if (timeLeft <= 0) {
-            timeLeft = 0;
-            currentState = GameState.GAME_OVER;
-            stateTimer = 5.0;
-        }
-
         updateDangerMap();
-        updateExplosions(deltaTime); // Passa delta
-        player.update(deltaTime);    // Passa delta
-        updateBombs(deltaTime);      // Passa delta
+        updateExplosions(deltaTime); 
+        player.update(deltaTime);    
+        updateBombs(deltaTime);      
         
         for (Objective obj : objectives) obj.update();
         checkPowerUpCollection(); 
@@ -372,7 +402,6 @@ public class GameController {
         Iterator<Enemy> enemyIterator = enemies.iterator();
         while (enemyIterator.hasNext()) {
             Enemy enemy = enemyIterator.next();
-            // Passa delta anche ai nemici
             enemy.update(gameMap, dangerMap, bombs, player, deltaTime); 
         }
         
@@ -383,23 +412,20 @@ public class GameController {
         enemies.clear(); 
         Random rand = new Random();
         
-        // Posizioni fisse per i primi 3 nemici (come prima)
         if (count >= 1) enemies.add(new Enemy(MAP_COLUMNS - 2, 1, enemyOffset)); 
         if (count >= 2) enemies.add(new Enemy(1, MAP_ROWS - 2, enemyOffset));     
         if (count >= 3) enemies.add(new Enemy(MAP_COLUMNS - 2, MAP_ROWS - 2, enemyOffset)); 
         
-        // Se ce ne sono altri (Livello 2 e 3), li mettiamo in posizioni casuali sicure
         for (int i = 3; i < count; i++) {
             int r, c;
             do {
                 r = rand.nextInt(MAP_ROWS);
                 c = rand.nextInt(MAP_COLUMNS);
-            } while (gameMap.isTileSolid(c, r) || (c < 4 && r < 4)); // Evita spawn vicino al player
+            } while (gameMap.isTileSolid(c, r) || (c < 4 && r < 4)); 
             enemies.add(new Enemy(c, r, enemyOffset));
         }
     }
     
-    // --- MODIFICA spawnObjectives per accettare il numero ---
     private void spawnObjectives(int cols, int rows, int amount) {
         objectives.clear();
         List<Coord> emptyLocations = new ArrayList<>();
@@ -412,7 +438,7 @@ public class GameController {
             }
         }
         Random rand = new Random();
-        int objectivesToSpawn = amount; // Usiamo il parametro passato
+        int objectivesToSpawn = amount; 
         
         if (emptyLocations.size() < objectivesToSpawn) objectivesToSpawn = emptyLocations.size();
         for (int i = 0; i < objectivesToSpawn; i++) {
@@ -423,12 +449,11 @@ public class GameController {
         }
     }
 
-
     private void updateExplosions(double deltaTime) {
         Iterator<Explosion> it = explosions.iterator();
         while (it.hasNext()) {
             Explosion e = it.next();
-            e.update(deltaTime); // Delta
+            e.update(deltaTime); 
             if (e.isFinished()) it.remove();
         }
         checkFireCollisions();
@@ -459,31 +484,26 @@ public class GameController {
     private void handleDeath() {
         if (currentState != GameState.PLAYING) return; 
         lives--;
-        if(lives != 0)  AudioManager.getInstance().stopMusic(); // Ferma musica gioco
-        AudioManager.getInstance().playSound("death"); // SUONO MORTE
+        if(lives != 0)  AudioManager.getInstance().stopMusic(); 
+        AudioManager.getInstance().playSound("death"); 
         if (lives > 0) {
             currentState = GameState.RESPAWNING;
             stateTimer = 3.0; 
-            
         } else {
-            // --- MODIFICA: Se vite finite, GAME OVER con timer ---
             currentState = GameState.GAME_OVER;
-            AudioManager.getInstance().stopMusic(); // Ferma musica gioco
+            AudioManager.getInstance().stopMusic(); 
             AudioManager.getInstance().playSound("lose");
             stateTimer = 5.0;
-  
         }
     }
     
    private void finishRespawn() {
         AudioManager.getInstance().playSound("respawn"); 
         
-        // --- FIX RESPAWN: Usiamo resetAfterDeath invece di new Player() ---
-        // Questo mantiene il contatore delle perle (objectivesCollected)
         player.resetAfterDeath(1, 1);
         
         AudioManager.getInstance().playMusic("/audio/song_gamplay.mp3");
-        player.activateImmunity(2.0); // 2 Secondi di immunità
+        player.activateImmunity(2.0); 
         for (Enemy enemy : enemies) enemy.resetPosition();
         bombs.clear();
         explosions.clear(); 
@@ -498,12 +518,12 @@ public class GameController {
                 player.collectObjective();
                 it.remove();
                 score += 1000; 
-                AudioManager.getInstance().playSound("powerup"); // SUONO RACCOLTA
+                AudioManager.getInstance().playSound("powerup"); 
                 if (player.hasWon()) {
                     currentState = GameState.VICTORY;
                     stateTimer = 5.0; 
-                    AudioManager.getInstance().stopMusic(); // Ferma musica gioco
-                    AudioManager.getInstance().playSound("win"); // JINGLE VITTORIA
+                    AudioManager.getInstance().stopMusic(); 
+                    AudioManager.getInstance().playSound("win"); 
                 }
             }
         }
@@ -517,11 +537,10 @@ public class GameController {
                 boolean collected = player.addPowerUp(p.getType());
                 if (collected) {
                     it.remove(); 
-                    AudioManager.getInstance().playSound("powerup"); // DING!
+                    AudioManager.getInstance().playSound("powerup"); 
 
-                    // NUOVO: Imposta notifica
                     lastCollectedPowerUp = p.getType();
-                    powerUpNotificationTimer = 5.0; // Mostra per 2 secondi
+                    powerUpNotificationTimer = 5.0; 
                 }
             }
         }
@@ -534,7 +553,7 @@ public class GameController {
         if (isBombAt(col, row)) return;
         if (!gameMap.isTileSolid(col, row)) {
             bombs.add(new Bomb(col, row, player.hasRemote()));
-            AudioManager.getInstance().playSound("bomb_place"); // CLICK!
+            AudioManager.getInstance().playSound("bomb_place"); 
         }
     }
 
@@ -552,20 +571,20 @@ public class GameController {
         return false;
     }
 
- // AGGIORNARE ANCHE QUESTI METODI PER ACCETTARE DELTA TIME
     private void updateBombs(double deltaTime) {
         Iterator<Bomb> iterator = bombs.iterator();
         while (iterator.hasNext()) {
             Bomb bomb = iterator.next();
-            bomb.update(deltaTime); // Delta
+            bomb.update(deltaTime); 
             if (bomb.isExploded()) { iterator.remove(); explodeBomb(bomb); }
         }
     }
+    
     private void explodeBomb(Bomb bomb) {
         int r = bomb.getRow();
         int c = bomb.getCol();
         int radius = player.getExplosionRadius();
-        AudioManager.getInstance().playSound("explosion"); // BOOM!
+        AudioManager.getInstance().playSound("explosion"); 
 
         fireAt(r, c); 
         for (int i = 1; i <= radius; i++) { if(!fireAt(r - i, c)) break; }
@@ -581,27 +600,21 @@ public class GameController {
         explosions.add(new Explosion(c, r));
 
         if (gameMap.destroyTile(r, c)) {
-            spawnRandomPowerUp(c, r);
+            // --- NUOVO: Controllo se c'era un PowerUp nascosto qui ---
+            spawnPowerUpIfHidden(c, r);
         }
         
         return type != TileType.BRICK; 
     }
 
-    private void spawnRandomPowerUp(int col, int row) {
-        if (player.getActivePowerUps().size() >= MAX_PLAYER_POWERUPS) return;
-
-        Random rand = new Random();
-        if (rand.nextDouble() < 0.15) {
-            PowerUpType[] types = PowerUpType.values();
-            List<PowerUpType> availableTypes = new ArrayList<>();
-            List<PowerUpType> currentPowerUps = player.getActivePowerUps();
-            for (PowerUpType t : types) {
-                if (!currentPowerUps.contains(t)) availableTypes.add(t);
-            }
-            if (!availableTypes.isEmpty()) {
-                PowerUpType randomType = availableTypes.get(rand.nextInt(availableTypes.size()));
-                powerUps.add(new PowerUp(col, row, randomType));
-            }
+    // --- NUOVO: Spawn PowerUp Nascosto ---
+    private void spawnPowerUpIfHidden(int col, int row) {
+        int key = row * 1000 + col;
+        if (hiddenPowerUps.containsKey(key)) {
+            PowerUpType type = hiddenPowerUps.get(key);
+            powerUps.add(new PowerUp(col, row, type));
+            hiddenPowerUps.remove(key); // Rimuovi per evitare duplicati (sicurezza)
+            System.out.println("Spawnato PowerUp " + type + " a (" + col + "," + row + ")");
         }
     }
     
