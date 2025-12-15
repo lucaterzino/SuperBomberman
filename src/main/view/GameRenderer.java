@@ -49,26 +49,22 @@ public class GameRenderer {
 
 
     public void drawGameScene(GameMap map, Player player, List<Enemy> enemies, 
-                              List<Bomb> bombs, List<Explosion> explosions, 
-                              List<PowerUp> powerUps, List<Objective> objectives, 
-                              double mapOffsetX, double mapOffsetY) {
+        List<Bomb> bombs, List<Explosion> explosions, 
+        List<PowerUp> powerUps, List<Objective> objectives, 
+        double mapOffsetX, double mapOffsetY) {
 
         drawDecorativeBackground(mapOffsetX, mapOffsetY, map.getColumns(), map.getRows());
-
         gc.save();
         gc.translate(mapOffsetX, mapOffsetY);
-
         drawMap(map);
         
         for (PowerUp p : powerUps) drawPowerUp(p);
-        for (Objective o : objectives) drawObjective(o);
-        
+        for (Objective o : objectives) drawObjective(o);     
         for (Bomb b : bombs) drawBomb(b);
         for (Enemy e : enemies) drawEnemy(e);
         for (Explosion e : explosions) drawExplosion(e);
         
         drawPlayer(player);
-
         gc.restore();
     }
 
