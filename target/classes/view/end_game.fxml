@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.canvas.Canvas?>
+<?import javafx.scene.layout.StackPane?>
+<StackPane style="-fx-background-color: black;" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="main.logic.EndGameController">
+   <children>
+      <Canvas fx:id="endCanvas" height="768.0" width="1024.0" focusTraversable="true" />
+   </children>
+</StackPane>
