@@ -7,7 +7,7 @@
       "name": "Run Gioco2D",
       "request": "launch",
       "mainClass": "main.Gioco",
-      "vmArgs": "--module-path C:/javafx-sdk-25.0.1/lib --enable-native-access=javafx.graphics --enable-native-access=javafx.media --add-modules javafx.controls,javafx.fxml,javafx.graphics,javafx.media" 
+      "vmArgs": "--module-path C:/javafx-sdk-21.0.0/lib --enable-native-access=javafx.graphics --enable-native-access=javafx.media --add-modules javafx.controls,javafx.fxml,javafx.graphics,javafx.media" 
     }
   ]
 }
